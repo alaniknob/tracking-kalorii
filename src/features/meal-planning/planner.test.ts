@@ -9,7 +9,7 @@ import { DEMO_RECIPES } from "@/features/recipes/demo-recipes";
 import { CHAIN_STORES } from "@/features/stores/stores";
 import { NO_PRACTICAL_LIMITS, type PracticalLimits } from "./candidates";
 import { KCAL_TOLERANCE, PLAN_DAYS } from "./constants";
-import { generateMealPlan, type PlannerInput } from "./generate";
+import { applyMealSwap, generateMealPlan, listSwapOptions, picksFromPlan, rebuildMealPlan, type PlannerInput } from "./generate";
 import { validatePantry, type PantryItem } from "./pantry";
 
 const TODAY = "2026-10-26";
@@ -278,5 +278,41 @@ describe("zapasy — walidacja", () => {
   it("przelicza na jednostkę bazową (sztuki → gramy)", () => {
     const result = validatePantry([{ productId: "jaja", amount: "4", unit: "szt" }], products);
     expect(result).toEqual({ ok: true, items: [{ productId: "jaja", amount: 4, unit: "szt", baseAmount: 200 }] });
+  });
+});
+
+describe("ręczna zamiana posiłku", () => {
+  it("odtwarza identyczny plan z zapisanych wyborów", () => {
+    const original = planned(input());
+    const rebuilt = rebuildMealPlan(input(), picksFromPlan(original));
+    expect(rebuilt.status).toBe("planned");
+    if (rebuilt.status !== "planned") return;
+    expect(rebuilt.plan.meals.map((m) => `${m.recipe.id}×${m.factor}`)).toEqual(
+      original.meals.map((m) => `${m.recipe.id}×${m.factor}`),
+    );
+  });
+
+  it("proponuje inny przepis na ten sam slot i zamiana go wstawia", () => {
+    const i = input();
+    const original = planned(i);
+    const options = listSwapOptions(i, picksFromPlan(original), 0);
+    expect(options.some((o) => o.current)).toBe(true);
+    const alternative = options.find((o) => !o.current);
+    expect(alternative).toBeDefined();
+    const swapped = applyMealSwap(i, picksFromPlan(original), 0, alternative!.recipeId, alternative!.factor);
+    expect(swapped.status).toBe("planned");
+    if (swapped.status !== "planned") return;
+    expect(swapped.plan.meals[0].recipe.id).toBe(alternative!.recipeId);
+    expect(swapped.plan.meals.slice(1).map((m) => m.recipe.id)).toEqual(original.meals.slice(1).map((m) => m.recipe.id));
+    expect(evaluateRecipeFit(swapped.plan.meals[0].recipe, products, i.rules).status).toBe("no_conflict_found");
+  });
+
+  it("nie wstawia przepisu wykluczonego alergią", () => {
+    const i = input({ restrictions: { allergens: [{ code: "milk", kind: "allergy", excludeTraces: true }] } });
+    const original = planned(i);
+    const dairy = DEMO_RECIPES.find((r) => r.ingredients.some((x) => products.get(x.productId)?.allergens.declared.milk));
+    expect(dairy).toBeDefined();
+    const swapped = applyMealSwap(i, picksFromPlan(original), 0, dairy!.id, 1);
+    expect(swapped.status).toBe("infeasible");
   });
 });

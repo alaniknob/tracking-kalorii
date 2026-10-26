@@ -9,10 +9,11 @@ test.describe("smoke", () => {
     await expect(page.getByRole("link", { name: "Oblicz zapotrzebowanie" })).toBeVisible();
   });
 
-  test("niedostępny ekran jest wyraźnie oznaczony", async ({ page }) => {
-    await page.goto("/panel");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Panel");
-    await expect(page.getByTestId("unavailable-notice")).toContainText("etapie 7");
+  test("logowanie bez konfiguracji pokazuje brak konfiguracji, a nie udaje sesji", async ({ page }) => {
+    await page.goto("/logowanie");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Logowanie");
+    await expect(page.getByTestId("brak-konfiguracji")).toContainText("Brak konfiguracji");
+    await expect(page.getByTestId("login-form")).toHaveCount(0);
   });
 
   test("każdy link z listy ekranów prowadzi do istniejącej strony", async ({ page, request }) => {

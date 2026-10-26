@@ -13,7 +13,8 @@ import type { StatusTotals } from "@/features/pricing/cost";
 import type { BaseUnit } from "@/features/products/types";
 import { formatGrosze, formatIsoDate, formatNumber, getMessages } from "@/i18n";
 import { cn } from "@/lib/cn";
-import { DRAFT_KEYS } from "@/lib/session-draft";
+import { DRAFT_KEYS, writeDraft } from "@/lib/session-draft";
+import { persistShoppingCheckedAction } from "@/features/auth/persist";
 import { checkStateOf, progressOf, pruneChecked, type CheckedMap, type CheckState, type ShoppingGroup, type ShoppingItem } from "../list";
 
 /** Ilość w jednostce bazowej czytelnie: od 1000 g / ml w kg / l. */
@@ -140,13 +141,14 @@ function List({ view }: { view: PlanView }) {
 
   useEffect(() => {
     const pruned = pruneChecked(list, readChecked());
-    window.sessionStorage.setItem(DRAFT_KEYS.shoppingChecked, JSON.stringify(pruned));
+    writeDraft(DRAFT_KEYS.shoppingChecked, JSON.stringify(pruned));
     setChecked(pruned);
   }, [list]);
 
   const save = (next: CheckedMap) => {
-    window.sessionStorage.setItem(DRAFT_KEYS.shoppingChecked, JSON.stringify(next));
+    writeDraft(DRAFT_KEYS.shoppingChecked, JSON.stringify(next));
     setChecked(next);
+    void persistShoppingCheckedAction(next);
   };
   const toggle = (item: ShoppingItem) => {
     const next = { ...checked };

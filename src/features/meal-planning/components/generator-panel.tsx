@@ -8,7 +8,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { describedBy, Field, Input, Select } from "@/components/ui/form";
 import type { QuantityUnit } from "@/features/products/types";
 import { formatGrosze, formatKcal, getMessages } from "@/i18n";
-import { DRAFT_KEYS, readPlannerDrafts } from "@/lib/session-draft";
+import { DRAFT_KEYS, readPlannerDrafts, writeDraft } from "@/lib/session-draft";
 import { generatePlanAction, plannerOverviewAction, type GeneratePlanState, type PlannerOverview } from "../actions";
 import { PANTRY_LIMITS } from "../constants";
 import type { ProfileStatus } from "../environment";
@@ -242,9 +242,8 @@ export function GeneratorPanel({ products }: { products: PantryProductOption[] }
 
   useEffect(() => {
     if (state.status === "idle" || state.status === "invalid") return;
-    if (state.pantryDraft === "") window.sessionStorage.removeItem(DRAFT_KEYS.pantry);
-    else window.sessionStorage.setItem(DRAFT_KEYS.pantry, state.pantryDraft);
-    if (state.status === "planned") window.sessionStorage.setItem(DRAFT_KEYS.plan, state.planDraft);
+    writeDraft(DRAFT_KEYS.pantry, state.pantryDraft);
+    if (state.status === "planned") writeDraft(DRAFT_KEYS.plan, state.planDraft);
   }, [state]);
 
   const canGenerate = overview !== null && overview.profile.status === "ok" && !overview.rulesConflict;

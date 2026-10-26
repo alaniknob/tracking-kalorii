@@ -11,7 +11,7 @@
 | Walidacja | Zod | 4.x |
 | Testy jednostkowe | Vitest | 5.x |
 | Testy E2E | Playwright (Chromium desktop + mobile) | 1.x |
-| Baza / Auth (planowane, etap 7) | Supabase (PostgreSQL + Auth + RLS) | — |
+| Baza / Auth | Supabase (PostgreSQL + Auth + RLS, `@supabase/ssr`) | etap 7 |
 
 Biblioteka komponentów: własne, lokalne komponenty w `src/components/ui` (podejście
 w stylu shadcn/ui — kod w repo, pełna kontrola, bez zależności runtime poza `clsx` i
@@ -53,7 +53,7 @@ src/
                           # (wersje robocze → PlannerInput), view.ts, akcje, ekrany generatora/tygodnia
     shopping/             # CZYSTA logika listy zakupów (list.ts: buildShoppingList, grupy,
                           # podpisy odhaczeń, postęp) + ekran listy (components/)
-    auth/                 # planowany moduł (README z zakresem)
+    auth/                 # sesja, rejestracja/logowanie, persistencja, usuwanie konta
   i18n/
     config.ts             # obsługiwane locale (pl-PL)
     messages/pl.ts        # wszystkie teksty UI i komunikaty walidacji
@@ -180,11 +180,11 @@ w etapie 7 dojdzie implementacja na Supabase (`store_prices`, `promotions`) bez 
    └─ loadPlannerEnvironment(drafts, generatedOn) → runPlanner → buildPlanView  (ten sam plan)
 ```
 
-Plan nie jest nigdzie zapisywany: generator jest deterministyczny, więc z tych samych wersji
-roboczych i tej samej daty wyceny (`generatedOn`) powstaje identyczny plan. Odcisk (SHA-256
-wersji roboczych) wykrywa zmianę ustawień — wtedy stary plan nie jest pokazywany. Wszystkie
-współczynniki generatora są w `features/meal-planning/constants.ts` (testy: `planner.test.ts`,
-`environment.test.ts`).
+Plan gościa zostaje w karcie (`startDate`, `generatedOn`, `fingerprint`, `assignment`). Po
+zalogowaniu generator zapisuje plan w `meal_plans` (RLS właściciela) i historię na `/historia`.
+Ręczna zamiana posiłku zmienia `assignment` i przelicza koszt oraz listę zakupów — nadal tylko
+przepisy z twardych filtrów. Odcisk (SHA-256) wykrywa zmianę ustawień. Współczynniki:
+`features/meal-planning/constants.ts`.
 
 ## Przepływ: lista zakupów
 
@@ -219,20 +219,20 @@ Teksty w obiekcie `pl` (`Messages` = jego typ). Dodanie języka: nowy plik o tym
 w `i18n/messages/`, wpis w `SUPPORTED_LOCALES` i słowniku `getMessages`. Routing z prefiksem
 locale nie jest wprowadzony (jeden język) — decyzja w `DECISIONS.md`.
 
-## Przyszłe API dla aplikacji mobilnej (planowane)
+## API dla aplikacji mobilnej (zalążek)
 
-Ta sama logika (`evaluateProfile`, przyszłe `generateMealPlan`) zostanie wystawiona przez
-Route Handlers `src/app/api/v1/*` (JSON, uwierzytelnianie tokenem Supabase). Akcje serwera
-pozostaną adapterem dla przeglądarki. Bez mikroserwisów.
+Route Handlers `src/app/api/v1/*`: `GET /api/v1/me`, `GET /api/v1/plans` (sesja ciasteczkowa
+Supabase). Bez konfiguracji → 503 `brak_konfiguracji`; bez sesji → 401. Dalsze endpointy
+(generator, zapis) dołożymy na tej samej logice domenowej. Bez mikroserwisów.
 
 ## Bezpieczeństwo i prywatność
 
 - Brak kluczy administracyjnych w przeglądarce: `SUPABASE_SERVICE_ROLE_KEY` tylko po stronie
-  serwera (obecnie nieużywany). Zob. `.env.example`.
-- Dane zdrowotne nie są zapisywane ani logowane w etapach 1–3.
-- Katalog w bazie: RLS włączone, odczyt publiczny, zapis tylko `service_role` (migracja etapu 3).
-- Planowane: RLS dla wszystkich tabel użytkownika, usuwanie konta i danych, logi bez danych
-  zdrowotnych, ocena RODO (dane szczególnych kategorii) przed publicznym startem.
+  serwera (opcjonalny, usuwanie konta gdy brak RPC). Zob. `.env.example` i `docs/KONFIGURACJA.md`.
+- Katalog w bazie: RLS, odczyt publiczny, zapis tylko `service_role`.
+- Dane użytkownika: RLS `auth.uid() = user_id` (migracja etapu 7). Usuwanie konta kasuje wiersze
+  kaskadą. Logi bez dumpowania profilu zdrowotnego.
+- Ocena RODO (dane szczególnych kategorii) przed publicznym startem — etap 8.
 
 ## Komendy
 
@@ -245,4 +245,5 @@ pozostaną adapterem dla przeglądarki. Bez mikroserwisów.
 | `npm test` | Vitest (testy jednostkowe) |
 | `npm run test:e2e` | Playwright (wymaga wcześniejszego `npm run build`) |
 | `npm run check` | typecheck + lint + test + build |
+| `npm run test:sql` | constrainty i RLS na lokalnym PostgreSQL |
 | `npm run db:seed:generate` | regeneruje `supabase/seed.sql` z danych demo |

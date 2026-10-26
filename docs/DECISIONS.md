@@ -74,8 +74,7 @@ wpisane dane (także w `<select>`).
 ## D11. Brak zapisu danych do czasu etapu 7
 
 Bez skonfigurowanego Supabase nie udajemy kont ani zapisu: kalkulator działa bezstanowo,
-a ekrany kont informują o wymaganej konfiguracji. `@supabase/supabase-js` zostanie dodany
-razem z pierwszym realnym użyciem.
+a ekrany kont informują o wymaganej konfiguracji. `@supabase/ssr` jest w etapie 7.
 
 ## D12. Testy
 
@@ -303,3 +302,23 @@ reguł z etapu 4: status ceny → koszt opakowań → resztki). Nie łączymy ro
 500 g) ani nie minimalizujemy liczby odwiedzanych sklepów — oba wymagałyby zmian w wycenie
 koszyka i w generatorze, żeby budżet i lista dalej się zgadzały. Produkty bez ceny trafiają do
 grupy „Bez ceny” i nie są wliczane do sumy (liczba braków jest pokazywana osobno).
+
+## D41. Brak konfiguracji ≠ atrapa logowania
+
+Gdy brak `NEXT_PUBLIC_SUPABASE_URL` albo `NEXT_PUBLIC_SUPABASE_ANON_KEY` (lub wartości są
+ewidentnie złe), ekrany konta pokazują „Brak konfiguracji” i nie renderują formularza, który
+„udawałby” sesję. Gość nadal używa karty przeglądarki. Klucz publishable (`sb_publishable_…`)
+jest akceptowany w slocie anon — to ten sam publiczny klucz, inny format.
+
+## D42. Wersje robocze + tabele z RLS, nie zamiast walidacji
+
+Po zalogowaniu te same JSON-y z karty trafiają do `user_drafts` i do tabel znormalizowanych.
+Każde użycie nadal waliduje Zod na serwerze. Plan zapisujemy z `assignment` (przepis + porcja
+na slot), żeby historia i zamiana nie wymagały ponownego szukania i żeby stary plan nie wziął
+nowej alergii (nadal pilnuje tego odcisk ustawień).
+
+## D43. Zamiana posiłku tylko w twardych filtrach
+
+Ręczna zamiana oferuje wyłącznie przepisy, które przechodzą `screenRecipes` (alergie, dieta,
+„wymaga weryfikacji”, czas, sprzęt). Porcję dobieramy pod kalorie dnia tą samą oceną co
+generator. Przepis wykluczony nie da się wstawić — wynik `infeasible`, komunikat po polsku.

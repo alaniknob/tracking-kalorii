@@ -540,3 +540,139 @@ function planWarnings(
   if (input.budgetGrosze === null) warnings.push({ code: "no_budget" });
   return warnings;
 }
+
+export const GENERATOR_VERSION = "7";
+
+/** Wybór przepisu i porcji na jeden slot planu — zapisywany, żeby dało się odtworzyć i zamieniać posiłki. */
+export interface MealPick {
+  recipeId: string;
+  factor: number;
+}
+
+export function picksFromPlan(plan: GeneratedPlan): MealPick[] {
+  return plan.meals.map((meal) => ({ recipeId: meal.recipe.id, factor: meal.factor }));
+}
+
+function factorIndex(factor: number): number {
+  return PORTION_FACTORS.findIndex((value) => Math.abs(value - factor) < 1e-9);
+}
+
+function assignmentFromPicks(
+  picks: readonly MealPick[],
+  candidates: readonly Candidate[],
+  slots: readonly MealSlot[],
+): Option[] | null {
+  if (picks.length !== PLAN_DAYS * slots.length) return null;
+  const byId = new Map(candidates.map((candidate, index) => [candidate.recipe.id, index] as const));
+  const assignment: Option[] = [];
+  for (let i = 0; i < picks.length; i++) {
+    const candidateIndex = byId.get(picks[i].recipeId);
+    const f = factorIndex(picks[i].factor);
+    if (candidateIndex === undefined || f < 0) return null;
+    if (!candidates[candidateIndex].slots.includes(slots[i % slots.length])) return null;
+    assignment.push({ c: candidateIndex, f });
+  }
+  return assignment;
+}
+
+/**
+ * Odtworzenie planu z zapisanych wyborów (historia, zamiana posiłku) — te same twarde filtry
+ * co generator: przepis spoza kandydatów (np. nowa alergia) = brak planu.
+ */
+export function rebuildMealPlan(input: PlannerInput, picks: readonly MealPick[]): PlanOutcome {
+  const layout = DAY_LAYOUTS[input.mealsPerDay];
+  if (!layout) throw new Error(`Unsupported mealsPerDay: ${input.mealsPerDay}`);
+  const slots = layout.map((item) => item.slot);
+  const { candidates, rejected } = screenRecipes(input.recipes, input.products, input.rules, input.limits);
+  const assignment = assignmentFromPicks(picks, candidates, slots);
+  if (!assignment) {
+    return { status: "infeasible", reasons: [], rejected };
+  }
+  const evaluator = createEvaluator(input, candidates, slots);
+  return {
+    status: "planned",
+    plan: buildPlan(
+      input,
+      candidates,
+      slots,
+      assignment,
+      evaluator.index,
+      rejected.filter((item) => item.fit.status === "needs_verification").length,
+    ),
+    rejected,
+  };
+}
+
+export interface SwapOption {
+  recipeId: string;
+  recipeName: string;
+  factor: number;
+  kcal: number;
+  current: boolean;
+  isDemo: boolean;
+}
+
+const MAX_SWAP_OPTIONS = 12;
+
+/**
+ * Alternatywy zamiany jednego posiłku: tylko przepisy, które przechodzą twarde filtry
+ * (alergie, dieta, weryfikacja, czas, sprzęt). Porcja dobierana pod kalorie dnia.
+ */
+export function listSwapOptions(input: PlannerInput, picks: readonly MealPick[], mealIndex: number): SwapOption[] {
+  const layout = DAY_LAYOUTS[input.mealsPerDay];
+  if (!layout) return [];
+  const slots = layout.map((item) => item.slot);
+  const { candidates } = screenRecipes(input.recipes, input.products, input.rules, input.limits);
+  const assignment = assignmentFromPicks(picks, candidates, slots);
+  if (!assignment || mealIndex < 0 || mealIndex >= assignment.length) return [];
+  const evaluator = createEvaluator(input, candidates, slots);
+  const slot = slots[mealIndex % slots.length];
+  const current = assignment[mealIndex];
+  const ranked: { option: SwapOption; score: Score }[] = [];
+
+  for (let c = 0; c < candidates.length; c++) {
+    if (!candidates[c].slots.includes(slot)) continue;
+    let bestF = 0;
+    let bestScore: Score | null = null;
+    for (let f = 0; f < PORTION_FACTORS.length; f++) {
+      assignment[mealIndex] = { c, f };
+      const score = evaluator.score(assignment);
+      if (bestScore === null || better(score, bestScore)) {
+        bestScore = score;
+        bestF = f;
+      }
+    }
+    assignment[mealIndex] = current;
+    const factor = PORTION_FACTORS[bestF];
+    ranked.push({
+      score: bestScore!,
+      option: {
+        recipeId: candidates[c].recipe.id,
+        recipeName: candidates[c].recipe.name,
+        factor,
+        kcal: Math.round(candidates[c].perServing.kcal * factor),
+        current: c === current.c,
+        isDemo: candidates[c].recipe.source.isDemo,
+      },
+    });
+  }
+
+  ranked.sort((a, b) => (better(a.score, b.score) ? -1 : better(b.score, a.score) ? 1 : 0));
+  const currentOption = ranked.find((item) => item.option.current);
+  const others = ranked.filter((item) => !item.option.current).slice(0, MAX_SWAP_OPTIONS);
+  return currentOption ? [currentOption.option, ...others.map((item) => item.option)] : others.map((item) => item.option);
+}
+
+export function applyMealSwap(
+  input: PlannerInput,
+  picks: readonly MealPick[],
+  mealIndex: number,
+  recipeId: string,
+  factor: number,
+): PlanOutcome {
+  if (mealIndex < 0 || mealIndex >= picks.length) {
+    return { status: "infeasible", reasons: [], rejected: [] };
+  }
+  const next = picks.map((pick, index) => (index === mealIndex ? { recipeId, factor } : pick));
+  return rebuildMealPlan(input, next);
+}

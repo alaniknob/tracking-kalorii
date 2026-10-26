@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { AccountSync } from "@/features/auth/components/account-sync";
 import { getMessages } from "@/i18n";
 import "./globals.css";
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {t.common.skipToContent}
         </a>
         <SiteHeader />
+        <AccountSync />
         <main id="tresc" className="flex-1">
           {children}
         </main>

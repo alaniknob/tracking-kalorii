@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { formatGrams, formatKcal, formatNumber, formatWeekdayDate, getMessages } from "@/i18n";
 import type { MealView, PlanView } from "../view";
+import { MealSwap } from "./meal-swap";
 import { PlanStateNotice } from "./plan-states";
 import { usePlan } from "./use-plan";
 import { mealCostText } from "./week-view";
@@ -117,6 +118,7 @@ function Detail({ meal, view }: { meal: MealView; view: PlanView }) {
             <p className="text-xs text-muted">{m.costHint}</p>
             {meal.unpricedCount > 0 ? <p className="text-xs text-danger">{t.pricing.totals.missingCount(meal.unpricedCount)}</p> : null}
           </Card>
+          <MealSwap mealId={meal.id} leftover={meal.leftoverOfId !== null} />
           <div className="flex flex-wrap gap-3">
             <ButtonLink href="/plan" variant="secondary">
               ← {m.backToWeek}

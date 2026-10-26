@@ -12,7 +12,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | 4 | Budżet, sklepy, ceny, promocje | ✅ zrobione |
 | 5 | Generator jadłospisu | ✅ zrobione |
 | 6 | Lista zakupów | ✅ zrobione |
-| 7 | Konta i trwałość (Supabase) | ⏳ |
+| 7 | Konta i trwałość (Supabase) | ✅ zrobione |
 | 8 | Weryfikacja końcowa | ⏳ |
 
 ## 1. Fundament — zrobione
@@ -103,10 +103,20 @@ zamiana posiłku w planie → etap 6.
 Przeniesione: ręczna zamiana posiłku w planie → etap 7 (wymaga zapisu planu — dziś plan jest
 odtwarzany deterministycznie z ustawień, D35); ręczne pozycje listy i współdzielenie → etap 7.
 
-## 7. Konta i trwałość
+## 7. Konta i trwałość — zrobione
 
-Supabase Auth (e-mail), zapis profilu i planów, historia, usuwanie konta i danych, RLS,
-API `src/app/api/v1/*` dla przyszłej aplikacji mobilnej. **Wymaga konfiguracji projektu Supabase.**
+- Supabase Auth (e-mail, sesje `@supabase/ssr`), ekrany `/logowanie`, `/rejestracja`, `/panel`,
+  `/profil`, `/historia`. Klucz `sb_publishable_…` jako `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Bez zmiennych: polski stan „Brak konfiguracji” — **nigdy** nie udajemy sesji.
+- Zapis: profil, preferencje, wykluczenia, sklepy, budżet, zapasy, import cen, plany,
+  odhaczenia listy; historia planów; ręczna zamiana posiłku (twarde filtry).
+- Usuwanie konta i danych: `delete_own_account()` (migracja) albo opcjonalnie
+  `SUPABASE_SERVICE_ROLE_KEY` tylko na serwerze.
+- RLS właściciela, testy SQL (`npm run test:sql`). API `GET /api/v1/me`, `GET /api/v1/plans`.
+- Instrukcja: `docs/KONFIGURACJA.md`. **Wymaga wgrania migracji na projekt Supabase.**
+
+Przeniesione: pełna ocena RODO / danych szczególnych kategorii → etap 8; `NutritionDataProvider`
+na żywych danych katalogu; ręczne pozycje listy i współdzielenie.
 
 ## 8. Weryfikacja
 

@@ -17,7 +17,7 @@ Aplikacja webowa dla rynku polskiego do:
 Interfejs w całości po polsku (komunikaty, daty, kwoty w PLN), architektura gotowa na i18n.
 Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 
-## Stan na koniec etapu 6 (bieżący)
+## Stan na koniec etapu 7 (bieżący)
 
 ### Działa
 
@@ -37,7 +37,10 @@ Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 | Widok tygodnia | `/plan` | Dni z kcal i makro, trzy rodzaje kosztu, budżet, koszyk, wykorzystane zapasy |
 | Szczegóły posiłku | `/plan/posilki/[id]` | Składniki przeliczone na porcję, instrukcja, kcal, makro, koszt, resztki |
 | Lista zakupów | `/zakupy` | Z planu tygodnia: sumowanie, opakowania, kategorie / sklepy, zapasy, odhaczanie, koszt |
-| Ekrany zastępcze (oznaczone „Niedostępne · Etap N”) | pozostałe | Brak martwych przycisków |
+| Logowanie / rejestracja | `/logowanie`, `/rejestracja` | E-mail; bez env — „Brak konfiguracji”, bez atrapy sesji |
+| Panel, historia, konto | `/panel`, `/historia`, `/profil` | Zapis na koncie, usuwanie danych |
+| Zamiana posiłku | `/plan/posilki/[id]` | Tylko przepisy spełniające alergie i dietę |
+| Ekrany zastępcze | brak na tym etapie | — |
 | Strony błędów po polsku | 404, błąd | Bez stack trace'ów |
 
 ### Kalkulator (etap 2)
@@ -139,7 +142,7 @@ Bez zapisanych ustawień przepisy nie mają oceny (komunikat z linkiem do ustawi
 
 **Baza danych:** pierwsza migracja katalogu (`supabase/migrations/20261026140000_catalog.sql`)
 z RLS — publiczny odczyt, zapis tylko `service_role`. Aplikacja na razie czyta dane z kodu
-przez interfejs `ProductCatalogProvider`; podłączenie Supabase — etap 7.
+przez interfejs `ProductCatalogProvider` (dane demo z kodu; seed SQL jest zsynchronizowany).
 
 ### Sklepy, ceny, promocje i budżet (etap 4)
 
@@ -248,10 +251,9 @@ mała różnorodność.
 katalogu; jeśli **wszystkie** pasujące produkty są wykluczone przez dietę lub alergie (np.
 „jogurt” przy diecie wegańskiej), preferencja jest usuwana z komunikatem na ekranach ustawień.
 
-**Plan nie jest zapisywany** (do etapu 7): w karcie zostaje tylko data startu, data wyceny i
-odcisk ustawień; widok tygodnia i posiłku odtwarzają plan na serwerze. Zmiana dowolnego
-ustawienia → komunikat „Ustawienia zmieniły się od wygenerowania planu” bez pokazywania starego
-planu (mógłby nie uwzględniać np. nowej alergii). Plan starszy niż 60 dni wygasa.
+**Plan:** w karcie `{ startDate, generatedOn, fingerprint, assignment }`; po zalogowaniu także
+w `meal_plans` (historia). Zmiana ustawień → stary plan nie jest pokazywany (odcisk). Plan
+starszy niż 60 dni wygasa. **Zamiana posiłku** — lista zamienników z twardych filtrów.
 
 ### Lista zakupów (etap 6)
 
@@ -288,13 +290,24 @@ widoku tygodnia.
 **Telefon:** układ jednokolumnowy (max. 3xl na desktopie), bez poziomego przewijania przy 375 px,
 pola wyboru 24 px w etykiecie na całą szerokość wiersza.
 
+### Konta i trwałość (etap 7)
+
+Rejestracja i logowanie e-mailem (Supabase Auth, ciasteczka `@supabase/ssr`). Po zalogowaniu
+zapis: profil, preferencje, alergie, sklepy, budżet, zapasy, import CSV, plany, odhaczenia.
+Historia na `/historia`. Usunięcie konta kasuje dane użytkownika (katalog demo zostaje).
+Bez `NEXT_PUBLIC_SUPABASE_URL` i `NEXT_PUBLIC_SUPABASE_ANON_KEY` — komunikat „Brak konfiguracji”
+(`docs/KONFIGURACJA.md`). Klucz publishable (`sb_publishable_…`) jest poprawną wartością anon.
+
+RLS: użytkowniczka czyta/zapisuje tylko swoje wiersze; katalog publiczny tylko do odczytu.
+Migracji na projekt hostowany agent nie wgrywa (brak hasła bazy).
+
 ### Ograniczenia obecnej wersji
 
-- Brak kont i trwałego zapisu (wymaga Supabase — etap 7); preferencje tylko w karcie przeglądarki.
+- Konta wymagają wgrania migracji SQL na projekt Supabase i zmiennych w `.env.local` / hostingu.
 - Generator ma do dyspozycji tylko 19 przepisów demo — przy ostrych ograniczeniach (np. weganin +
   alergia na soję i gluten, limit 15 min) plan bywa niewykonalny lub mało różnorodny; diagnoza
   wskazuje przyczynę. Ocena jest heurystyczna (lokalne optimum), nie gwarantuje najtańszego planu.
-- Brak ręcznej zamiany posiłku w planie i blokowania wybranych posiłków.
+- Zamiana posiłku nie blokuje wybranego dania na stałe i nie optymalizuje całego tygodnia od nowa.
 - Katalog to tylko dane demo; brak prawdziwego źródła danych odżywczych (planowane przez
   `NutritionDataProvider`, etap 4+). Brak wyszukiwarki i dodawania produktów.
 - Preferowane produkty są dopasowywane do katalogu po fragmencie nazwy — etykieta bez
@@ -302,12 +315,12 @@ pola wyboru 24 px w etykiecie na całą szerokość wiersza.
 - Dopasowanie własnych wykluczeń (wolny tekst) do produktów jest heurystyczne (fragment nazwy
   lub składu) — dlatego przy nieznanym składzie wynik to „wymaga weryfikacji”.
 - Ceny to wyłącznie dane przykładowe lub import użytkownika; brak dostawcy prawdziwych cen
-  (interfejs `StorePriceProvider` jest gotowy). Import, sklepy i budżet tylko w karcie
-  przeglądarki do etapu 7.
+  (interfejs `StorePriceProvider` jest gotowy). Import, sklepy i budżet bez konta zostają w karcie;
+  po zalogowaniu — w bazie.
 - Jeden rozmiar opakowania na produkt w koszyku (bez łączenia np. 500 g + 1 kg); wybór sklepu
   per produkt — bez kosztu dojazdu i minimalnej liczby sklepów.
-- Zapasy, plan i odhaczenia listy zakupów tylko w karcie przeglądarki (znikają po jej zamknięciu;
-  brak współdzielenia listy między urządzeniami do etapu 7).
+- Bez konta zapasy, plan i odhaczenia znikają po zamknięciu karty; z kontem są na koncie
+  (współdzielenie między urządzeniami po zalogowaniu). Ręczne pozycje listy i eksport — później.
 - Lista zakupów nie pozwala ręcznie dopisać produktu spoza planu, zmienić sklepu dla pozycji ani
   edytować ilości; brak trybu offline i eksportu/druku.
 

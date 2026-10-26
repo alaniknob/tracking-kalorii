@@ -1,12 +1,11 @@
 # Model danych
 
-> **Stan obecny (koniec etapu 6):** istnieją migracje katalogu publicznego
-> (`20261026140000_catalog.sql`) i cen (`20261026150000_pricing.sql`). Aplikacja jeszcze **nie
-> łączy się** z bazą: katalog i ceny demo czyta z kodu przez interfejsy dostawców, a
-> `supabase/seed.sql` jest generowany z tych samych danych. Plany i zapasy (etap 5) istnieją
-> tylko w karcie przeglądarki, podobnie odhaczenia listy zakupów (etap 6) — tabele planów i list
-> powstaną razem z kontami (etap 7). Pozostałe tabele to schemat docelowy (etap 7). Typy domenowe w kodzie
-> (`src/features/*/types.ts`) są zgodne z nazwami kolumn (camelCase ↔ snake_case).
+> **Stan obecny (koniec etapu 7):** migracje katalogu, cen i **kont**
+> (`20261026170000_accounts.sql`). Aplikacja łączy się z Auth przez `@supabase/ssr`, gdy są
+> zmienne `NEXT_PUBLIC_SUPABASE_*`; bez nich pokazuje „Brak konfiguracji” i trzyma ustawienia
+> w karcie. Katalog demo nadal jest czytany z kodu (seed SQL jest z tych samych danych).
+> Po zalogowaniu te same wersje robocze trafiają do tabel użytkownika (RLS właściciela).
+> Typy domenowe w kodzie (`src/features/*/types.ts`) są zgodne z nazwami kolumn (camelCase ↔ snake_case).
 
 ## Typy domenowe już zdefiniowane w kodzie
 
@@ -58,7 +57,7 @@
 
 ## Tabele
 
-### Użytkownik i profil (etap 7)
+### Użytkownik i profil (etap 7 — zaimplementowane w `20261026170000_accounts.sql`)
 
 **`profiles`** — 1:1 z `auth.users`
 `user_id` PK/FK, `birth_date date not null`, `height_cm numeric(5,1) check 120–230`,
@@ -136,8 +135,7 @@ rekordy `is_demo = true`). Testy SQL: `supabase/tests/catalog.test.sql`.
 `kind check in (chain, other)` (domyślnie `chain`), `sort_order smallint unique`,
 `is_active boolean default true`. Migracja wstawia 9 sieci (Lidl, Biedronka, Kaufland, Aldi,
 Carrefour, Auchan, Dino, Netto, Stokrotka) — zgodność z `src/features/stores/stores.ts`
-pilnuje test Vitest. Własne sklepy użytkownika (`inny-<slug>`) są na razie tylko w karcie
-przeglądarki; w bazie — etap 7.
+pilnuje test Vitest. Własne sklepy: `user_custom_stores` (etap 7).
 
 **`store_prices`** — oddzielone od wartości odżywczych. `id uuid` PK, `product_id` FK
 (cascade), `store_id` FK (`on delete restrict`), `price numeric(10,2)` (> 0, ≤ 10 000),
@@ -160,15 +158,15 @@ potwierdzona. Indeks (`product_id`, `store_id`, `ends_on desc`). Status (aktywna
 nadchodząca / wygasła) liczony przy odczycie.
 
 W kodzie kwoty są liczbami całkowitymi w **groszach**; `numeric(10,2)` tylko w bazie.
-Ceny z importu CSV użytkownika nie trafiają do katalogu publicznego — w etapie 7 osobna tabela
-z `user_id` i RLS właściciela. Seed zawiera 25 produktów, 19 przepisów, 60 cen i 3 promocje demo (`is_demo = true`).
+Ceny z importu CSV użytkownika: `user_price_imports` + `user_store_prices` / `user_promotions`
+(RLS właściciela), nie katalog publiczny. Seed: 25 produktów, 19 przepisów, 60 cen i 3 promocje demo.
 Testy SQL: `supabase/tests/pricing.test.sql`.
 
-### Plany, zapasy i zakupy (planowane — etap 7, z kontami)
+### Plany, zapasy i zakupy (etap 7 — zaimplementowane)
 
-W etapie 5 plan **nie jest zapisywany** (decyzja D35): w `sessionStorage` jest tylko
-`tk:draft:plan` = `{ startDate, generatedOn, fingerprint }`, a `tk:draft:pantry` to lista
-`{ productId, amount, unit }`. Schemat docelowy odpowiada typom z `features/meal-planning`:
+Gość: `tk:draft:plan` = `{ startDate, generatedOn, fingerprint, assignment }`. Konto: te same
+dane w `user_drafts` + `meal_plans` / `meal_plan_items` / `shopping_lists`. `assignment` pozwala
+odtworzyć i zamienić posiłek bez ponownego szukania.
 
 **`meal_plans`** — `id`, `user_id`, `start_date date`, `priced_on date`, `target_kcal`,
 `target_protein_g`, `target_fat_g`, `target_carbohydrates_g`, `meals_per_day smallint 2–6`,
@@ -207,7 +205,12 @@ update, delete, truncate` od `anon` i `authenticated`. Zapis wyłącznie przez `
 **Zaimplementowane (etap 4)** dla `stores`, `store_prices`, `promotions` — te same zasady
 (publiczny odczyt, zapis tylko `service_role`), test `supabase/tests/pricing.test.sql`.
 
-**Docelowo (etapy 4–7):**
+**Zaimplementowane (etap 7)** — tabele z `user_id` (oraz `meal_plan_items` / `shopping_list_items`
+przez `exists` na rodzicu): SELECT/INSERT/UPDATE/DELETE wyłącznie gdy `auth.uid() = user_id`.
+Anon nie ma uprawnień. Test: `supabase/tests/accounts.test.sql`. Usunięcie `auth.users`
+kasuje dane (`on delete cascade`). Funkcja `delete_own_account()`.
+
+**Podsumowanie:**
 
 | Grupa tabel | SELECT | INSERT/UPDATE/DELETE |
 | --- | --- | --- |

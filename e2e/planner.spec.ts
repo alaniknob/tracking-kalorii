@@ -159,6 +159,24 @@ test.describe("generator jadłospisu", () => {
     await expect(page.getByLabel("Ilość")).toHaveValue("400");
   });
 
+  test("ręczna zamiana posiłku na inny przepis z listy zamienników", async ({ page }) => {
+    await saveProfile(page);
+    await generate(page);
+    await expect(page.getByTestId("generator-result")).toBeVisible();
+    await page.goto("/plan/posilki/1-1");
+    await expect(page.getByTestId("meal-recipe-name")).toBeVisible();
+    const original = (await page.getByTestId("meal-recipe-name").textContent())!.trim();
+    const swap = page.getByTestId("meal-swap");
+    await expect(swap).toBeVisible();
+    const button = swap.getByRole("button", { name: "Zamień" }).first();
+    await expect(button).toBeVisible();
+    await button.click();
+    await expect(page.getByTestId("meal-recipe-name")).not.toHaveText(original, { timeout: 15_000 });
+    await page.goto("/plan");
+    await expect(page.getByTestId("week-view")).toBeVisible();
+    await expect(page.getByTestId("meal-1-1")).not.toContainText(original);
+  });
+
   test("weganin z preferowanym „jogurt” — konflikt pokazany i rozstrzygnięty", async ({ page }) => {
     await page.goto("/ustawienia/zywienie");
     await page.getByLabel("Tradycyjna").uncheck();
