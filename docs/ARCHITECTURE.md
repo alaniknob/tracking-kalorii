@@ -48,7 +48,10 @@ src/
                           # zużyty vs opakowania (cost.ts), parser CSV i import z walidacją,
                           # StorePriceProvider / PromotionProvider, ceny demo, akcje, komponenty
     budget/               # Zod budżetu, diagnoza (diagnose.ts), sprawdzenie koszyka, formularze
-    meal-planning/ shopping/ auth/   # planowane moduły (README z zakresem)
+    meal-planning/        # generator 7 dni: constants.ts (wszystkie współczynniki), candidates.ts
+                          # (filtr twardy), generate.ts (CZYSTA funkcja), pantry.ts, environment.ts
+                          # (wersje robocze → PlannerInput), view.ts, akcje, ekrany generatora/tygodnia
+    shopping/ auth/       # planowane moduły (README z zakresem)
   i18n/
     config.ts             # obsługiwane locale (pl-PL)
     messages/pl.ts        # wszystkie teksty UI i komunikaty walidacji
@@ -150,6 +153,36 @@ Import CSV nie jest nigdzie zapisywany na serwerze: akcja zwraca raport, a przeg
 surowy tekst pliku w `sessionStorage`. Każde użycie importuje go ponownie na serwerze, więc
 zmanipulowana wersja robocza przechodzi tę samą walidację co plik. Dostawcy cen są interfejsami —
 w etapie 7 dojdzie implementacja na Supabase (`store_prices`, `promotions`) bez zmian w logice.
+
+## Przepływ: generator jadłospisu
+
+```
+<GeneratorPanel> (client) — readPlannerDrafts(): wycena + diet/restrictions + profile + pantry
+   ├─ plannerOverviewAction(drafts)            → podsumowanie wejść (profil, gotowanie, budżet…)
+   └─ generatePlanAction(FormData: startDate, wiersze zapasów, drafts JSON)
+        ├─ validatePantry (produkt z katalogu, ilość, jednostka → baseAmount)
+        └─ loadPlannerEnvironment(drafts, today)          (features/meal-planning/environment.ts)
+             ├─ loadPricingEnvironment                    (jak wyżej)
+             ├─ readProfile: profileDraftSchema → evaluateProfile → cel kcal + makro + posiłki
+             ├─ resolveRulesFromDrafts(diet, restrictions, katalog) + limity praktyczne z diety
+             └─ runPlanner → generateMealPlan(PlannerInput)           (generate.ts, czysta funkcja)
+                  ├─ screenRecipes: evaluateRecipeFit = no_conflict_found + limity praktyczne
+                  ├─ brak kandydatów na posiłek / kcal poza zasięgiem → infeasible + remedies
+                  ├─ construct (zachłannie) → local search (ocena leksykograficzna, indexOffers)
+                  └─ buildPlan: posiłki, dni, resztki, full/basket costNeeds, diagnoseBudget, uwagi
+        → buildPlanView (view.ts: daty, id „dzień-posiłek”, składniki na porcję, koszt posiłku)
+        → przeglądarka zapisuje tk:draft:pantry i tk:draft:plan {startDate, generatedOn, fingerprint}
+
+/plan, /plan/posilki/[id] (client) → loadPlanAction(drafts, planDraft)
+   ├─ wiek > 60 dni → expired; planFingerprint(drafts) ≠ fingerprint → settings_changed
+   └─ loadPlannerEnvironment(drafts, generatedOn) → runPlanner → buildPlanView  (ten sam plan)
+```
+
+Plan nie jest nigdzie zapisywany: generator jest deterministyczny, więc z tych samych wersji
+roboczych i tej samej daty wyceny (`generatedOn`) powstaje identyczny plan. Odcisk (SHA-256
+wersji roboczych) wykrywa zmianę ustawień — wtedy stary plan nie jest pokazywany. Wszystkie
+współczynniki generatora są w `features/meal-planning/constants.ts` (testy: `planner.test.ts`,
+`environment.test.ts`).
 
 ## Ekrany i nawigacja
 

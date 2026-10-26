@@ -5,6 +5,9 @@ import type { DataCompleteness, ProductCategory } from "@/features/products/type
 import type { MealType, RecipeReliability } from "@/features/recipes/types";
 import type { BudgetStatus } from "@/features/budget/diagnose";
 import type { MissingReason } from "@/features/pricing/cost";
+import type { PracticalReason } from "@/features/meal-planning/candidates";
+import type { MealSlot } from "@/features/meal-planning/constants";
+import type { PlanWarning, Remedy } from "@/features/meal-planning/generate";
 import type { PriceSourceKind, PriceStatus } from "@/features/pricing/types";
 import type {
   ActivityLevel,
@@ -25,7 +28,7 @@ export const pl = {
     name: "Tracking Kalorii",
     tagline: "Plan żywienia, kalorie i koszt zakupów — w jednym miejscu.",
     description:
-      "Aplikacja szacuje zapotrzebowanie energetyczne, a w kolejnych etapach ułoży 7-dniowy jadłospis i listę zakupów dopasowaną do budżetu i wybranych sklepów.",
+      "Aplikacja szacuje zapotrzebowanie energetyczne i układa 7-dniowy jadłospis dopasowany do alergii, diety, budżetu i wybranych sklepów. Listę zakupów z odhaczaniem dodamy w kolejnym etapie.",
   },
   common: {
     unavailable: "Niedostępne",
@@ -67,6 +70,10 @@ export const pl = {
       {
         title: "Ceny, koszty i budżet",
         body: "Ceny jednostkowe, koszt zużytych składników i całych opakowań, aktualność cen, import CSV i sprawdzenie budżetu — ceny potwierdzone i szacunkowe zawsze osobno.",
+      },
+      {
+        title: "Generator jadłospisu na 7 dni",
+        body: "Deterministyczny plan: najpierw alergie i dieta, potem kalorie, makro i budżet w całych opakowaniach, zapasy z domu, resztki i diagnoza, gdy planu nie da się ułożyć.",
       },
     ],
     screensTitle: "Ekrany aplikacji",
@@ -339,7 +346,7 @@ export const pl = {
     goalKcal: { label: "Proponowana kaloryczność", hint: "Cel kaloryczny dopasowany do wybranego celu." },
     plannedKcal: {
       label: "Kalorie zaplanowanych posiłków",
-      hint: "Pojawią się po wygenerowaniu jadłospisu (etap 5).",
+      hint: "Średnią dzienną kaloryczność planu zobaczysz w widoku tygodnia po wygenerowaniu jadłospisu.",
       empty: "Brak planu",
     },
     adjustment: (kcal: number) =>
@@ -504,11 +511,11 @@ export const pl = {
     submit: "Zapisz budżet",
     submitting: "Zapisywanie…",
     saved: (amount: string) => `Zapisano budżet ${amount} tygodniowo w tej karcie przeglądarki.`,
-    draftNote: "Budżet jest twardym ograniczeniem przyszłego generatora. Nigdy nie obniża bezpieczeństwa ani nie łagodzi alergii.",
+    draftNote: "Budżet jest ograniczeniem generatora jadłospisu — ważniejszym od różnorodności, ale nigdy nie obniża bezpieczeństwa, nie łagodzi alergii ani diety.",
     clear: "Wyczyść",
     check: {
       title: "Sprawdź budżet na koszyku przepisów",
-      lead: "Wybierz, ile razy w tygodniu przygotujesz każdy przepis. Wspólne produkty są sumowane i kupowane w całych opakowaniach. To ręczny koszyk do czasu generatora (etap 5).",
+      lead: "Wybierz, ile razy w tygodniu przygotujesz każdy przepis. Wspólne produkty są sumowane i kupowane w całych opakowaniach. Generator jadłospisu robi to samo automatycznie — tu możesz sprawdzić własny zestaw.",
       timesLabel: (name: string) => `Liczba przygotowań: ${name}`,
       timesSuffix: "× w tygodniu",
       submit: "Sprawdź koszt",
@@ -677,7 +684,81 @@ export const pl = {
     },
   },
   planner: {
+    demoBadge: "Dane przykładowe",
+    demoNotice:
+      "Jadłospis powstaje z PRZYKŁADOWYCH przepisów, produktów i cen (demo) — wartości są przybliżone, a ceny nie są aktualnymi cenami sklepów. Plan ma charakter informacyjny i nie zastępuje porady dietetyka.",
+    slots: {
+      breakfast: "Śniadanie",
+      second_breakfast: "Drugie śniadanie",
+      lunch: "Obiad",
+      afternoon_snack: "Podwieczorek",
+      dinner: "Kolacja",
+      evening_snack: "Przekąska wieczorna",
+    } satisfies Record<MealSlot, string>,
+    overview: {
+      profileLabel: "Cel i posiłki",
+      dietLabel: "Gotowanie",
+      restrictionsLabel: "Alergie i wykluczenia",
+      budgetLabel: "Budżet",
+      storesLabel: "Sklepy",
+      change: "Zmień",
+      profile: {
+        ok: (kcal: string, p: number, f: number, c: number, meals: number) =>
+          `${kcal} dziennie · białko ${p} g, tłuszcze ${f} g, węglowodany ${c} g · ${meals} ${meals < 5 ? "posiłki" : "posiłków"} dziennie`,
+        missing: "Brak profilu — oblicz zapotrzebowanie i zachowaj profil w tej karcie.",
+        invalid: "Zachowany profil jest niepoprawny — oblicz zapotrzebowanie ponownie.",
+        restricted: "Dla Twojego profilu nie wyznaczamy automatycznie celu kalorycznego — generator nie ułoży planu.",
+        goalBlocked: "Wybrany cel nie jest proponowany automatycznie — zmień cel w profilu.",
+      },
+      dietDefault: "Brak zapisanych ustawień — bez limitu czasu, dowolna trudność i sprzęt, z resztkami.",
+      noTimeLimit: "bez limitu czasu",
+      timeLimit: (n: number) => `do ${n} min`,
+      noEquipment: "bez sprzętu",
+      maxIngredients: (n: number) => `maks. ${n} składników`,
+      leftoversOn: "z resztkami",
+      leftoversOff: "bez resztek",
+      restrictionsSaved: "Zapisane — przepisy niezgodne lub wymagające weryfikacji są pomijane.",
+      restrictionsNone: "Brak zapisanych alergii i wykluczeń.",
+      budgetNone: "Brak — plan zostanie wyceniony bez limitu kwoty.",
+      budget: (amount: string, estimates: boolean) =>
+        `${amount} tygodniowo${estimates ? " · ceny szacunkowe dozwolone (pokazywane osobno)" : " · tylko ceny potwierdzone"}`,
+      storesAll: "Wszystkie sieci z listy",
+      importFile: (file: string) => `import: ${file}`,
+    },
+    generator: {
+      inputsTitle: "Z czego powstanie plan",
+      inputsLead:
+        "Ustawienia z tej karty przeglądarki. Kolejność ważności: bezpieczeństwo i alergie → dieta → kalorie → makroskładniki → budżet → dostępność cen → czas → różnorodność → mniej marnowania.",
+      loading: "Wczytywanie ustawień…",
+      overviewError: "Nie udało się wczytać ustawień. Spróbuj odświeżyć stronę.",
+      needsProfileTitle: "Generator potrzebuje celu kalorycznego",
+      needsProfile:
+        "Oblicz zapotrzebowanie w profilu i wybierz „Zachowaj profil w tej karcie”. Bez tego nie ułożymy planu — nie zgadujemy kaloryczności.",
+      goToProfile: "Przejdź do profilu",
+      rulesConflictTitle: "Ustawienia są sprzeczne",
+      rulesConflict: "Twoje ustawienia żywieniowe zawierają sprzeczność do poprawienia — popraw je, a potem wygeneruj plan.",
+      goToDiet: "Popraw ustawienia żywieniowe",
+      startDate: "Pierwszy dzień planu",
+      startDateHint: "Plan obejmuje 7 kolejnych dni.",
+      startDateInvalid: "Podaj datę w formacie RRRR-MM-DD.",
+      startDateRange: (days: number) => `Wybierz datę od dziś do ${days} dni naprzód.`,
+      generate: "Wygeneruj jadłospis",
+      generating: "Układanie planu…",
+      deterministic: "Te same ustawienia dają zawsze ten sam plan.",
+      resultTitle: "Plan jest gotowy",
+      openWeek: "Zobacz jadłospis na 7 dni",
+    },
     pantry: {
+      title: "Zapasy w domu (opcjonalnie)",
+      hint: "Produkty, które już masz. Generator chętniej ich użyje, a ich ilość nie trafi do koszyka zakupów. Zapisujemy je tylko w tej karcie.",
+      empty: "Brak zapasów.",
+      product: "Produkt",
+      choose: "— wybierz —",
+      amount: "Ilość",
+      unit: "Jednostka",
+      remove: "Usuń",
+      removeLabel: (n: number) => `Usuń pozycję zapasów ${n}`,
+      add: "Dodaj produkt z zapasów",
       errors: {
         tooMany: (max: number) => `Możesz podać maksymalnie ${max} pozycji zapasów.`,
         product: "Wybierz produkt z listy.",
@@ -685,6 +766,133 @@ export const pl = {
         amount: "Podaj ilość większą od 0.",
         unit: (name: string) => `Tej jednostki nie da się przeliczyć dla produktu „${name}”.`,
       },
+    },
+    remedies: {
+      raise_prep_time: (minutes: number) => `Zwiększ maksymalny czas przygotowania do co najmniej ${minutes} min.`,
+      allow_medium_difficulty: "Dopuść przepisy o średniej trudności.",
+      add_equipment: (equipment: string) => `Zaznacz dostępne wyposażenie: ${equipment}.`,
+      raise_max_ingredients: (count: number) => `Zwiększ maksymalną liczbę składników do co najmniej ${count}.`,
+      review_diet:
+        "Część przepisów wyklucza Twoja dieta lub wykluczenia — możesz złagodzić sposób żywienia albo dobrowolne wykluczenia (alergii i nietolerancji nie luzujemy).",
+      verify_products: "Część przepisów ma składniki bez pełnych danych o składzie („wymaga weryfikacji”) — nie dodajemy ich automatycznie.",
+      more_meals_per_day: "Zwiększ liczbę posiłków dziennie w profilu.",
+      fewer_meals_per_day: "Zmniejsz liczbę posiłków dziennie w profilu.",
+    } satisfies Record<Remedy["code"], unknown>,
+    infeasible: {
+      title: "Nie da się ułożyć planu przy obecnych ustawieniach",
+      lead: "Poniżej dokładny powód i co można zmienić. Nie luzujemy samodzielnie żadnego ograniczenia.",
+      noRecipes: (slot: string) => `Brak przepisów na posiłek „${slot}”, które spełniają wszystkie ograniczenia.`,
+      energyTooHigh: (target: number, max: number) =>
+        `Cel ${target} kcal dziennie jest poza zasięgiem: największe porcje dostępnych przepisów dają ok. ${max} kcal.`,
+      energyTooLow: (target: number, min: number) =>
+        `Cel ${target} kcal dziennie jest poza zasięgiem: najmniejsze porcje dostępnych przepisów dają ok. ${min} kcal.`,
+      details: {
+        total: (n: number) => `Przepisy tego typu odrzucone: ${n}.`,
+        excluded: (n: number) => `Wykluczone przez alergie, nietolerancje lub dietę: ${n}.`,
+        needsVerification: (n: number) => `Wymagające weryfikacji składu: ${n}.`,
+        practical: {
+          prep_time: (n: number) => `Za długi czas przygotowania: ${n}.`,
+          difficulty: (n: number) => `Za wysoka trudność: ${n}.`,
+          equipment: (n: number) => `Brak wymaganego sprzętu: ${n}.`,
+          max_ingredients: (n: number) => `Za dużo składników: ${n}.`,
+        } satisfies Record<PracticalReason, unknown>,
+      },
+      remediesTitle: "Co możesz zmienić",
+      change: "Zmień",
+      noRemedy: "W katalogu nie ma przepisów tego typu, które pasowałyby do Twoich alergii i diety.",
+      rejectedSummary: (excluded: number, verification: number, practical: number) =>
+        `W całym katalogu pominięto: ${excluded} wykluczonych, ${verification} wymagających weryfikacji, ${practical} niespełniających ograniczeń praktycznych.`,
+      neverRelaxed: "Alergie i nietolerancje nie są luzowane nigdy — także dla ceny czy kalorii.",
+    },
+    warnings: {
+      days_off_target: (days: string) => `Kaloryczność dni ${days} odbiega od celu o więcej niż 10%.`,
+      macro_off: (macro: string, direction: "low" | "high", share: string) =>
+        `${macro}: średnio ${share} celu — ${direction === "low" ? "poniżej" : "powyżej"} zalecanego zakresu.`,
+      required_group_missing: (group: string) => `Twoja dieta wymaga grupy „${group}”, ale żaden dostępny przepis jej nie zawiera.`,
+      missing_prices: (products: string) => `Bez ceny w wybranych sklepach: ${products} — koszt planu jest niepełny.`,
+      estimated_prices: (count: number) => `${count} ${count === 1 ? "pozycja ma" : "pozycje mają"} tylko cenę szacunkową (pokazaną osobno).`,
+      incomplete_nutrition: (recipes: string) => `Niepełne dane odżywcze: ${recipes} — kalorie mogą być zaniżone.`,
+      verification_skipped: (count: number) =>
+        `Pominięto ${count} ${count === 1 ? "przepis wymagający" : "przepisy wymagające"} weryfikacji składu (brak pełnych danych o alergenach).`,
+      low_variety: (recipe: string, times: number) =>
+        `„${recipe}” jest gotowany ${times} razy w tygodniu — to cena zmieszczenia się w budżecie lub ograniczeniach (budżet jest ważniejszy od różnorodności).`,
+      no_budget: "Nie ustawiono budżetu.",
+    } satisfies Record<PlanWarning["code"], unknown>,
+    costs: {
+      title: "Koszt planu",
+      kind: "Rodzaj kosztu",
+      amount: "Kwota",
+      used: "Koszt zużytych składników",
+      usedHint: "Tylko ta część opakowań, która trafi do posiłków.",
+      packages: "Koszt koniecznych opakowań",
+      packagesHint: "Całe opakowania potrzebne do planu, bez odliczania zapasów.",
+      basket: "Do kupienia (po odliczeniu zapasów)",
+      basketHint: "Całe opakowania minus to, co masz w domu — to porównujemy z budżetem.",
+    },
+    summary: {
+      status: {
+        ok: "Plan spełnia cel i mieści się w ograniczeniach",
+        warnings: "Plan gotowy — sprawdź uwagi poniżej",
+        over_budget: "Plan nie mieści się w budżecie",
+      } satisfies Record<"ok" | "warnings" | "over_budget", string>,
+      priority:
+        "Najpierw bezpieczeństwo, alergie i dieta, potem kalorie i makroskładniki, dopiero potem budżet, czas i różnorodność.",
+      avgKcal: "Średnio dziennie",
+      target: (kcal: string) => `cel: ${kcal}`,
+      daysWithin: "Dni w normie kalorii",
+      tolerance: "odchylenie ≤ 10%",
+      prepTime: "Czas gotowania",
+      perWeek: "łącznie w tygodniu",
+      leftovers: "Posiłki z resztek",
+      leftoversHint: "gotujesz raz, jesz dwa razy",
+      noBudget: "Nie ustawiono budżetu — plan wyceniono, ale bez porównania z limitem.",
+      setBudget: "Ustaw budżet",
+      warningsTitle: "Uwagi do planu",
+      pricedOn: (date: string) => `Ceny i promocje według stanu na ${date}.`,
+    },
+    week: {
+      loading: "Odtwarzanie planu…",
+      error: "Nie udało się wczytać planu. Spróbuj odświeżyć stronę.",
+      emptyTitle: "Nie masz jeszcze planu",
+      empty: "Wygeneruj 7-dniowy jadłospis — plan jest przechowywany tylko w tej karcie przeglądarki.",
+      expiredTitle: "Plan jest nieaktualny",
+      expired: (date: string) => `Plan wygenerowano ${date} — ceny i daty są już nieaktualne. Wygeneruj nowy.`,
+      changedTitle: "Ustawienia zmieniły się od wygenerowania planu",
+      changed:
+        "Zmieniono profil, alergie, dietę, budżet, sklepy, ceny lub zapasy. Stary plan mógłby im nie odpowiadać, więc go nie pokazujemy — wygeneruj nowy.",
+      goToGenerator: "Przejdź do generatora",
+      daysTitle: "Jadłospis",
+      dayNumber: (n: number) => `Dzień ${n}`,
+      macrosShort: (p: string, f: string, c: string) => `B ${p} g · T ${f} g · W ${c} g`,
+      basketTitle: "Do kupienia",
+      basketLead: "Suma składników z całego tygodnia minus zapasy, w całych opakowaniach z wybranych sklepów.",
+      pantryTitle: "Wykorzystane zapasy",
+      pantryNone: "Plan nie korzysta z zapasów (nie podano ich lub nie są potrzebne).",
+      pantryUsed: (used: string, available: string) => `${used} z ${available}`,
+      nextTitle: "Chcesz coś zmienić?",
+      nextLead: "Zmień ustawienia (np. budżet, czas, zapasy) i wygeneruj plan ponownie.",
+      regenerate: "Wróć do generatora",
+    },
+    meal: {
+      portion: (factor: string) => `porcja × ${factor}`,
+      ofRecipe: (servings: string) => `przepis na ${servings}`,
+      leftoverShort: "z resztek (bez gotowania)",
+      cookDouble: "Ugotuj więcej — na jutro",
+      leftoverBadge: "Resztki",
+      preferred: "Preferowany produkt",
+      leftoverOf: (label: string) => `To resztki z posiłku: ${label}.`,
+      leftoverFor: (label: string) => `Przygotuj od razu większą ilość — część zjesz jako: ${label}.`,
+      openMeal: "Zobacz",
+      instructionsScaled: (servings: string) =>
+        `Instrukcja dotyczy całego przepisu (${servings}); ilości składników obok są przeliczone na tę porcję.`,
+      ingredientsTitle: "Składniki tej porcji",
+      inPantry: "masz w zapasach",
+      costTitle: "Koszt posiłku",
+      costHint: "Koszt zużytej części składników według ofert z koszyka (bez reszty opakowań).",
+      backToWeek: "Wróć do tygodnia",
+      openRecipe: "Pełny przepis",
+      notFoundTitle: "Nie ma takiego posiłku w planie",
+      notFound: "Plan mógł zostać wygenerowany ponownie. Wybierz posiłek z widoku tygodnia.",
     },
   },
   errors: {

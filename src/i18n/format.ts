@@ -35,3 +35,10 @@ export function formatIsoDate(iso: string, locale: Locale = DEFAULT_LOCALE): str
     new Date(`${iso}T00:00:00Z`),
   );
 }
+
+/** Dzień tygodnia i data, np. „poniedziałek, 26 paź”. */
+export function formatWeekdayDate(iso: string, locale: Locale = DEFAULT_LOCALE): string {
+  return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" }).format(
+    new Date(`${iso}T00:00:00Z`),
+  );
+}

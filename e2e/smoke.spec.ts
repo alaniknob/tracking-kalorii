@@ -10,9 +10,9 @@ test.describe("smoke", () => {
   });
 
   test("niedostępny ekran jest wyraźnie oznaczony", async ({ page }) => {
-    await page.goto("/generator");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Generator jadłospisu");
-    await expect(page.getByTestId("unavailable-notice")).toContainText("etapie 5");
+    await page.goto("/zakupy");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lista zakupów");
+    await expect(page.getByTestId("unavailable-notice")).toContainText("etapie 6");
   });
 
   test("każdy link z listy ekranów prowadzi do istniejącej strony", async ({ page, request }) => {

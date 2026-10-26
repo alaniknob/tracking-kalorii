@@ -223,3 +223,59 @@ zapisanych ustawień propozycja jest oznaczona jako niesprawdzona pod tym kątem
 Ceny przykładowe mają stałe daty (październik 2026), a nie „dziś minus N dni” — dzięki temu
 seed SQL jest deterministyczny, a z upływem czasu ceny demo uczciwie stają się „nieaktualne”.
 Testy jednostkowe i E2E podają datę jawnie lub sprawdzają zachowanie niezależne od daty.
+
+## D31. Generator: ocena leksykograficzna zamiast jednej sumy wag
+
+Kolejność ważności z briefu jest zapisana wprost: plan ocenia krotka
+`[brak wymaganych grup, energia poza ±10%, makro poza pasmami (w kcal), przekroczenie budżetu
+(gr), produkty bez ceny, cele miękkie]`, porównywana element po elemencie. Dzięki temu żadna
+kombinacja celów miękkich (koszt, czas, różnorodność) nie „przeważy” kalorii, a budżet nie
+przeważy makroskładników. Alergie, dieta i weryfikacja składu w ogóle nie są w ocenie — są
+filtrem kandydatów. Wagi celów miękkich (w punktach ≈ groszach: 1 zł kosztu = 100 pkt, minuta
+gotowania = 4 pkt, powtórka ponad limit = 1500 pkt, powtórka w tym samym dniu = 4000 pkt,
+preferowany produkt = −300 pkt) są w `features/meal-planning/constants.ts` i dobrane tak, by
+różnorodność i czas miały znaczenie porównywalne z kilkunastoma złotymi tygodniowo.
+
+## D32. Porcje 0,5–2× porcji przepisu; tolerancja ±10% i pasma makro
+
+Kalorie dnia są dopasowywane porcją (0,5; 0,75; 1; 1,25; 1,5; 1,75; 2 porcji przepisu) —
+składniki skalują się proporcjonalnie, więc kcal i makro posiłku nadal wynikają ze składników.
+Dzień „w normie” to odchylenie ≤ 10% od celu (typowa dokładność szacunku TDEE jest gorsza).
+Pasma makro (białko 85–140%, tłuszcze i węglowodany 70–130% celu) są szersze dla białka w górę,
+bo nadwyżka białka przy zdrowych dorosłych jest mniej problematyczna niż niedobór.
+
+## D33. Resztki: ta sama pora następnego dnia
+
+Gdy włączone „Wykorzystuj resztki”, obiad lub kolacja z przepisu na ≥ 2 porcje, powtórzone
+następnego dnia o tej samej porze, jest traktowane jako resztki: czas gotowania liczony raz,
+a powtórka nie obniża oceny różnorodności. Prosta reguła, zrozumiała w UI („Ugotuj więcej — na
+jutro”); bez przechowywania dłużej niż jeden dzień (bezpieczeństwo żywności).
+
+## D34. Przepisy „wymaga weryfikacji” pomijane automatycznie
+
+Generator dopuszcza wyłącznie przepisy z oceną `no_conflict_found`. Przepis z niepełnymi
+danymi o składzie przy zapisanych alergiach nie jest dodawany, a plan informuje, ile przepisów
+pominięto. Lepszy plan mniej różnorodny niż ryzyko alergenu.
+
+## D35. Plan nie jest zapisywany — odtwarzany z ustawień i daty wyceny
+
+Do czasu kont (etap 7) plan nie trafia do bazy ani na serwer. W karcie zostaje `{ startDate,
+generatedOn, fingerprint }`; widok tygodnia i posiłku ponownie uruchamiają deterministyczny
+generator z wersjami roboczymi i datą wyceny `generatedOn`, więc wynik jest identyczny.
+`fingerprint` (SHA-256 wersji roboczych) wykrywa zmianę ustawień — wtedy stary plan nie jest
+pokazywany, bo mógłby nie uwzględniać np. nowej alergii. Plan starszy niż 60 dni wygasa.
+Migracja `meal_plans` powstanie z kontami (RLS właściciela wymaga `auth.uid()`).
+
+## D36. Profil w karcie tylko na wyraźne życzenie
+
+Profil zawiera dane o zdrowiu, dlatego nie jest zapisywany automatycznie — użytkownik klika
+„Zachowaj profil w tej karcie”. Serwer liczy cel z profilu od nowa przy każdym użyciu (te same
+zasady bezpieczeństwa: przy ograniczeniach generator nie działa) i niczego nie loguje.
+
+## D37. Budżet ważniejszy od różnorodności; preferowane produkty vs reguły
+
+Przy ciasnym budżecie generator może powtarzać tani przepis częściej niż limit 2× w tygodniu
+(priorytet 6 > 9) — plan pokazuje wtedy uwagę o małej różnorodności. Preferowany produkt
+(wolny tekst) jest dopasowywany do nazw z katalogu; jeśli wszystkie dopasowania są wykluczone
+przez dietę lub alergie, preferencja jest usuwana z konfliktem „rozstrzygniętym” (np. „jogurt”
+przy diecie wegańskiej). Etykieta bez dopasowania nie jest konfliktem.

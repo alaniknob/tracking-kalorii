@@ -17,7 +17,7 @@ Aplikacja webowa dla rynku polskiego do:
 Interfejs w całości po polsku (komunikaty, daty, kwoty w PLN), architektura gotowa na i18n.
 Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 
-## Stan na koniec etapu 4 (bieżący)
+## Stan na koniec etapu 5 (bieżący)
 
 ### Działa
 
@@ -33,6 +33,9 @@ Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 | Wybór sklepów | `/ustawienia/sklepy` | 9 sieci + do 10 własnych sklepów |
 | Budżet i sprawdzenie koszyka | `/ustawienia/budzet` | Budżet tygodniowy, koszt wybranych przepisów, diagnoza |
 | Koszt przepisu | `/przepisy/[id]` | Koszt zużytych składników vs koszt opakowań |
+| Generator jadłospisu (7 dni) | `/generator` | Cel z profilu zachowanego w karcie, zapasy, data startu, diagnoza niewykonalności |
+| Widok tygodnia | `/plan` | Dni z kcal i makro, trzy rodzaje kosztu, budżet, koszyk, wykorzystane zapasy |
+| Szczegóły posiłku | `/plan/posilki/[id]` | Składniki przeliczone na porcję, instrukcja, kcal, makro, koszt, resztki |
 | Ekrany zastępcze (oznaczone „Niedostępne · Etap N”) | pozostałe | Brak martwych przycisków |
 | Strony błędów po polsku | 404, błąd | Bez stack trace'ów |
 
@@ -46,7 +49,8 @@ Wynik rozróżnia cztery wartości:
 1. **BMR** — podstawowa przemiana materii (Mifflin–St Jeor),
 2. **TDEE** — całkowite zapotrzebowanie = BMR × współczynnik aktywności,
 3. **proponowana kaloryczność** — TDEE skorygowane o cel, z limitami bezpieczeństwa,
-4. **kalorie zaplanowanych posiłków** — „Brak planu” do czasu generatora (etap 5).
+4. **kalorie zaplanowanych posiłków** — na ekranie profilu „Brak planu”; średnia dzienna planu
+   jest w widoku tygodnia (`/plan`).
 
 Dodatkowo: BMI, białko / tłuszcze / węglowodany (g i % energii), minimalny błonnik, średnia
 kaloryczność posiłku. Współczynniki: `src/features/nutrition/constants.ts`, uzasadnienia:
@@ -144,7 +148,7 @@ duplikatów). Wymagany co najmniej jeden sklep. Bez zapisanego wyboru wyceny uż
 sieci (komunikat z linkiem do wyboru). Nazwa sieci nie oznacza integracji — **nie pobieramy
 danych ze sklepów** (brak API, brak scrapingu).
 
-**Ceny przykładowe:** 45 cen i 3 promocje demo (`src/features/pricing/demo-prices.ts`) z
+**Ceny przykładowe:** 60 cen i 3 promocje demo (`src/features/pricing/demo-prices.ts`) z
 plakietką „Ceny przykładowe” i banerem — nie są aktualnymi cenami sklepów. Część celowo
 nieaktualna lub szacunkowa, jedna promocja wygasła, jedna z warunkami, a przyprawa curry nie
 ma ceny — żeby było widać każdy stan.
@@ -188,15 +192,77 @@ za kg/l, **tylko zgodny z alergiami i dietą** — `evaluateProductFit`), mniej 
 ceny, zgoda na szacunki, zmiana przepisów. Przepisy wykluczone przez ustawienia są pomijane
 z komunikatem.
 
+### Generator jadłospisu (etap 5)
+
+**Wejście** (wszystko z tej karty przeglądarki, walidowane na serwerze przy każdym użyciu):
+profil (cel kcal, makro, liczba posiłków 2–6 — zachowywany w karcie **tylko na wyraźne
+życzenie** przyciskiem „Zachowaj profil w tej karcie”), ustawienia żywieniowe, alergie, budżet,
+sklepy, import cen, zapasy (do 30 pozycji: produkt z katalogu, ilość, jednostka przeliczalna
+dla produktu) i pierwszy dzień planu (dziś … +14 dni). Bez profilu lub przy profilu z
+ograniczeniami (np. osoba niepełnoletnia, ciąża) generator **nie działa** — pokazuje drogę do
+profilu, nie zgaduje kaloryczności. Sprzeczne ustawienia diety blokują generowanie.
+
+**Kolejność ważności** (z briefu, w kodzie jako ocena leksykograficzna — wcześniejsze kryterium
+zawsze wygrywa z późniejszym):
+
+1–3. **Bezpieczeństwo, alergie, dieta** — twarde filtry: przepis „wykluczony” albo „wymaga
+weryfikacji” (`evaluateRecipeFit`) **nigdy** nie trafia do planu; ograniczenia praktyczne (czas,
+trudność, wyposażenie, liczba składników) też są twarde. Grupy wymagane przez dietę (np. „Z
+rybami”) — co najmniej raz w tygodniu.
+4. **Energia** — każdy dzień w ±10% celu kcal (porcje 0,5–2× porcji przepisu).
+5. **Makro** — pasma: białko 85–140%, tłuszcze 70–130%, węglowodany 70–130% celu.
+6. **Budżet** — koszt koszyka (całe opakowania minus zapasy) ≤ budżet.
+7. **Dostępność** — mniej produktów bez ceny w wybranych sklepach.
+8–10. **Cele miękkie** — koszt, mniej resztek opakowań, czas przygotowania, różnorodność (ten sam
+przepis gotowany maks. 2× w tygodniu, bez powtórek w jednym dniu), preferowane produkty,
+dokładność kcal i białka. Wagi: `src/features/meal-planning/constants.ts`.
+
+Budżet jest ważniejszy od różnorodności: przy ciasnym budżecie przepis może się powtarzać
+częściej — plan pokazuje wtedy uwagę „gotowany N razy w tygodniu”.
+
+**Algorytm:** deterministyczny (te same ustawienia i data wyceny → ten sam plan): konstrukcja
+zachłanna dzień po dniu, potem lokalna optymalizacja (zamiana przepisu we wszystkich wystąpieniach
+— łączy opakowania; zmiana przepisu lub porcji pojedynczego posiłku), maks. 12 przejść.
+**Resztki** (gdy włączone): obiad lub kolacja z przepisu na ≥ 2 porcje może być zjedzona
+następnego dnia o tej samej porze — „Ugotuj więcej — na jutro”, czas gotowania liczony raz.
+
+**Trzy koszty** (każdy osobno dla cen potwierdzonych i szacunkowych):
+koszt zużytych składników, koszt koniecznych opakowań (bez odliczania zapasów) i **do kupienia**
+(opakowania po odliczeniu zapasów — porównywany z budżetem). Koszt posiłku = zużyta część
+składników według ofert z koszyka.
+
+**Diagnoza:** budżet za niski → status „Plan nie mieści się w budżecie” z potrzebną kwotą,
+brakującą kwotą, najdroższymi pozycjami i propozycjami (inny sklep, tańszy zamiennik zgodny z
+alergiami i dietą, mniej resztek, brakujące ceny). Planu nie da się ułożyć → powód po polsku
+(np. „Brak przepisów na posiłek „Obiad”…” z liczbą odrzuconych wg przyczyny albo „cel kcal poza
+zasięgiem”) i konkretne zmiany z linkiem (np. „Zwiększ maksymalny czas przygotowania do co
+najmniej 20 min”, „Zaznacz dostępne wyposażenie: Piekarnik”). Alergii i nietolerancji nie
+proponujemy luzować nigdy.
+
+**Uwagi do planu:** dni poza tolerancją kcal, makro poza pasmem, brak wymaganej grupy, produkty
+bez ceny, ceny szacunkowe, niepełne dane odżywcze, pominięte przepisy wymagające weryfikacji,
+mała różnorodność.
+
+**Preferowane produkty vs reguły:** etykieta preferowana jest dopasowywana do nazw produktów z
+katalogu; jeśli **wszystkie** pasujące produkty są wykluczone przez dietę lub alergie (np.
+„jogurt” przy diecie wegańskiej), preferencja jest usuwana z komunikatem na ekranach ustawień.
+
+**Plan nie jest zapisywany** (do etapu 7): w karcie zostaje tylko data startu, data wyceny i
+odcisk ustawień; widok tygodnia i posiłku odtwarzają plan na serwerze. Zmiana dowolnego
+ustawienia → komunikat „Ustawienia zmieniły się od wygenerowania planu” bez pokazywania starego
+planu (mógłby nie uwzględniać np. nowej alergii). Plan starszy niż 60 dni wygasa.
+
 ### Ograniczenia obecnej wersji
 
 - Brak kont i trwałego zapisu (wymaga Supabase — etap 7); preferencje tylko w karcie przeglądarki.
-- Kalkulator nie korzysta jeszcze z preferencji (będą użyte przez generator — etap 5).
+- Generator ma do dyspozycji tylko 19 przepisów demo — przy ostrych ograniczeniach (np. weganin +
+  alergia na soję i gluten, limit 15 min) plan bywa niewykonalny lub mało różnorodny; diagnoza
+  wskazuje przyczynę. Ocena jest heurystyczna (lokalne optimum), nie gwarantuje najtańszego planu.
+- Brak ręcznej zamiany posiłku w planie i blokowania wybranych posiłków.
 - Katalog to tylko dane demo; brak prawdziwego źródła danych odżywczych (planowane przez
   `NutritionDataProvider`, etap 4+). Brak wyszukiwarki i dodawania produktów.
-- Konflikty preferowanych produktów z dietą (np. „jogurt” przy diecie wegańskiej) nie są
-  wykrywane — preferowane produkty to wolny tekst niepowiązany z katalogiem; przeniesione do
-  generatora (etap 5), który będzie dopasowywał je do produktów z kategoriami.
+- Preferowane produkty są dopasowywane do katalogu po fragmencie nazwy — etykieta bez
+  dopasowania nie jest konfliktem (nie wiemy, czym jest).
 - Dopasowanie własnych wykluczeń (wolny tekst) do produktów jest heurystyczne (fragment nazwy
   lub składu) — dlatego przy nieznanym składzie wynik to „wymaga weryfikacji”.
 - Ceny to wyłącznie dane przykładowe lub import użytkownika; brak dostawcy prawdziwych cen
@@ -204,8 +270,8 @@ z komunikatem.
   przeglądarki do etapu 7.
 - Jeden rozmiar opakowania na produkt w koszyku (bez łączenia np. 500 g + 1 kg); wybór sklepu
   per produkt — bez kosztu dojazdu i minimalnej liczby sklepów.
-- Sprawdzenie koszyka to ręczny wybór przepisów; automatyczny plan w ramach budżetu — generator
-  (etap 5). Brak zapasów użytkownika i listy zakupów (etap 6).
+- Zapasy i plan tylko w karcie przeglądarki; brak listy zakupów z odhaczaniem i grupowaniem wg
+  sklepu (etap 6) — na razie koszyk w widoku tygodnia.
 
 ## Zakres docelowy (planowany)
 

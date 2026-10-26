@@ -10,7 +10,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | 2 | Profil, kalkulator, preferencje, alergie | ✅ zrobione |
 | 3 | Produkty, przepisy, alergeny | ✅ zrobione |
 | 4 | Budżet, sklepy, ceny, promocje | ✅ zrobione |
-| 5 | Generator jadłospisu | ⏳ |
+| 5 | Generator jadłospisu | ✅ zrobione |
 | 6 | Lista zakupów | ⏳ |
 | 7 | Konta i trwałość (Supabase) | ⏳ |
 | 8 | Weryfikacja końcowa | ⏳ |
@@ -51,8 +51,7 @@ walidacja Zod na serwerze, tymczasowe przechowywanie w `sessionStorage`, testy j
   z kodu i pilnowany testem, testy SQL — sprawdzone na lokalnym PostgreSQL 16.
 - Nawigacja mobilna bez przewijania w poziomie (test E2E).
 
-Przeniesione: konflikty preferowanych produktów (wolny tekst) z dietą → etap 5 (dopasowanie
-do katalogu w generatorze).
+Przeniesione: konflikty preferowanych produktów (wolny tekst) z dietą → etap 5 (zrobione).
 
 ## 4. Budżet i sklepy — zrobione
 
@@ -71,12 +70,22 @@ do katalogu w generatorze).
 Przeniesione: `NutritionDataProvider` → etap 7 (wraz z prawdziwym źródłem danych); zapis cen
 z importu w bazie (osobna tabela z `user_id`) → etap 7. Żadnego scrapingu bez zgody źródła.
 
-## 5. Generator jadłospisu
+## 5. Generator jadłospisu — zrobione
 
-Deterministyczna selekcja: twarde ograniczenia (bezpieczeństwo, alergie, dieta) → energia →
-makro → budżet → dostępność → czas → różnorodność → mniej marnowania. Optymalizacja kosztu
-z uwzględnieniem całych opakowań i zapasów. Diagnoza nierealnego budżetu z kwotą potrzebną.
-Widok tygodnia i szczegóły posiłku.
+- Deterministyczny generator 7 dni (`features/meal-planning`): twarde filtry (alergie, dieta,
+  „wymaga weryfikacji”, czas, trudność, sprzęt, liczba składników) → ocena leksykograficzna:
+  wymagane grupy → energia ±10% → makro → budżet (całe opakowania, minus zapasy) → dostępność
+  cen → koszt, resztki opakowań, czas, różnorodność, preferowane produkty.
+- Porcje 0,5–2×, 2–6 posiłków dziennie, resztki na następny dzień, zapasy użytkownika.
+- Trzy koszty (zużyte / opakowania / do kupienia), ceny potwierdzone i szacunkowe osobno,
+  diagnoza budżetu z potrzebną kwotą, diagnoza niewykonalności po polsku z konkretnymi zmianami.
+- Ekrany: `/generator`, `/plan`, `/plan/posilki/[id]`; profil zachowywany w karcie na życzenie.
+- Konflikt preferowanych produktów z dietą/alergiami (dopasowanie do katalogu) — przeniesiony
+  z etapu 3.
+- 7 nowych produktów, 13 nowych przepisów i 15 cen demo (oznaczone).
+
+Przeniesione: zapis planów i zapasów w bazie → etap 7 (z kontami i RLS właściciela); ręczna
+zamiana posiłku w planie → etap 6.
 
 ## 6. Lista zakupów
 

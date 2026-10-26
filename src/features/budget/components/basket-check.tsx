@@ -43,7 +43,7 @@ function suggestionText(s: BudgetSuggestion, names: NameMaps): string {
   }
 }
 
-function Diagnosis({ d, names }: { d: BudgetDiagnosis; names: NameMaps }) {
+export function BudgetDiagnosisPanel({ d, names }: { d: BudgetDiagnosis; names: NameMaps }) {
   const c = getMessages().budget.check;
   const p = getMessages().pricing;
   return (
@@ -176,7 +176,7 @@ export function BasketCheck({ recipes }: { recipes: { id: string; name: string; 
                 )}
               </Alert>
             ) : null}
-            <Diagnosis d={state.diagnosis} names={state.names} />
+            <BudgetDiagnosisPanel d={state.diagnosis} names={state.names} />
             {!state.hasRules ? <p className="text-xs text-muted">{c.noRulesNote}</p> : null}
             <CostBreakdown cost={state.cost} names={state.names} />
             {state.unconvertible.length > 0 ? <Alert tone="warning">{t.pricing.recipeCost.unconvertible}</Alert> : null}

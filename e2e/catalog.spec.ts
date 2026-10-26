@@ -14,7 +14,7 @@ test.describe("katalog produktów i przepisów", () => {
     await expect(page.getByTestId("demo-notice")).toBeVisible();
     await page.getByRole("link", { name: /Kurczak curry/ }).click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kurczak curry z papryką i ryżem");
-    await expect(page.getByRole("table")).toContainText("Na porcję");
+    await expect(page.getByRole("table").first()).toContainText("Na porcję");
     await expect(page.getByText("Kalorie i makroskładniki są wyliczane ze składników")).toBeVisible();
     await expect(page.getByTestId("incomplete-data")).toContainText("„Przyprawa curry” nie ma danych");
     await expect(page.getByText("Ustaw preferencje i alergie")).toBeVisible();
@@ -38,7 +38,7 @@ test.describe("katalog produktów i przepisów", () => {
 
 test("nawigacja i ekrany mieszczą się na ekranie bez przewijania w poziomie", async ({ page }) => {
   const viewport = page.viewportSize()!.width;
-  for (const path of ["/", "/ceny", "/ustawienia/budzet", "/ustawienia/sklepy", "/przepisy/kurczak-curry-z-ryzem"]) {
+  for (const path of ["/", "/ceny", "/ustawienia/budzet", "/ustawienia/sklepy", "/przepisy/kurczak-curry-z-ryzem", "/generator", "/plan"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     // Porównanie z rozmiarem okna urządzenia — przeglądarka mobilna przy przepełnieniu oddala widok (innerWidth rośnie).

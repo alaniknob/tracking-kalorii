@@ -1,10 +1,11 @@
 # Model danych
 
-> **Stan obecny (koniec etapu 3):** istnieje pierwsza migracja — katalog publiczny
-> (`supabase/migrations/20261026140000_catalog.sql`, sekcja „Katalog publiczny” poniżej opisuje
-> ją dokładnie). Aplikacja jeszcze **nie łączy się** z bazą: katalog demo czyta z kodu przez
-> `ProductCatalogProvider`, a `supabase/seed.sql` jest generowany z tych samych danych.
-> Pozostałe tabele to schemat docelowy (etapy 4–7). Typy domenowe w kodzie
+> **Stan obecny (koniec etapu 5):** istnieją migracje katalogu publicznego
+> (`20261026140000_catalog.sql`) i cen (`20261026150000_pricing.sql`). Aplikacja jeszcze **nie
+> łączy się** z bazą: katalog i ceny demo czyta z kodu przez interfejsy dostawców, a
+> `supabase/seed.sql` jest generowany z tych samych danych. Plany i zapasy (etap 5) istnieją
+> tylko w karcie przeglądarki — tabele planów powstaną razem z kontami (etap 7). Pozostałe
+> tabele to schemat docelowy (etapy 6–7). Typy domenowe w kodzie
 > (`src/features/*/types.ts`) są zgodne z nazwami kolumn (camelCase ↔ snake_case).
 
 ## Typy domenowe już zdefiniowane w kodzie
@@ -160,17 +161,28 @@ nadchodząca / wygasła) liczony przy odczycie.
 
 W kodzie kwoty są liczbami całkowitymi w **groszach**; `numeric(10,2)` tylko w bazie.
 Ceny z importu CSV użytkownika nie trafiają do katalogu publicznego — w etapie 7 osobna tabela
-z `user_id` i RLS właściciela. Seed zawiera 45 cen i 3 promocje demo (`is_demo = true`).
+z `user_id` i RLS właściciela. Seed zawiera 25 produktów, 19 przepisów, 60 cen i 3 promocje demo (`is_demo = true`).
 Testy SQL: `supabase/tests/pricing.test.sql`.
 
-### Plany i zakupy (etap 5–6)
+### Plany, zapasy i zakupy (planowane — etap 7, z kontami)
 
-**`meal_plans`** — `id`, `user_id`, `week_start date`, `target_kcal`, `budget_pln`,
-`status text`, `generator_version text`, `input_snapshot jsonb` (bez danych zdrowotnych).
+W etapie 5 plan **nie jest zapisywany** (decyzja D35): w `sessionStorage` jest tylko
+`tk:draft:plan` = `{ startDate, generatedOn, fingerprint }`, a `tk:draft:pantry` to lista
+`{ productId, amount, unit }`. Schemat docelowy odpowiada typom z `features/meal-planning`:
 
-**`meal_plan_items`** — `id`, `meal_plan_id` FK cascade, `day smallint 1–7`, `slot smallint`,
-`recipe_id`, `servings numeric`, wyliczone `kcal`, `protein_g`, `fat_g`, `carbohydrates_g`,
-`ingredients_cost_pln`.
+**`meal_plans`** — `id`, `user_id`, `start_date date`, `priced_on date`, `target_kcal`,
+`target_protein_g`, `target_fat_g`, `target_carbohydrates_g`, `meals_per_day smallint 2–6`,
+`budget_pln null`, `status text` (`ok` / `warnings` / `over_budget`), `generator_version text`,
+`warnings jsonb`, koszty `used_*_pln` / `packages_*_pln` / `basket_*_pln` osobno dla statusów
+`current` / `stale` / `estimated` (bez danych zdrowotnych — tylko cele liczbowe).
+
+**`meal_plan_items`** — `id`, `meal_plan_id` FK cascade, `day smallint 1–7`, `slot text`
+(`breakfast`, `second_breakfast`, `lunch`, `afternoon_snack`, `dinner`, `evening_snack`),
+`recipe_id`, `portion_factor numeric` (0,5–2 porcji przepisu), `leftover_of_item_id null`,
+wyliczone `kcal`, `protein_g`, `fat_g`, `carbohydrates_g`, `ingredients_cost_pln`.
+
+**`pantry_items`** — `id`, `user_id`, `product_id`, `amount numeric > 0`, `unit text`,
+`updated_at`; unikalne (`user_id`, `product_id`).
 
 **`shopping_lists`** — `id`, `user_id`, `meal_plan_id null`, `created_at`.
 
