@@ -7,10 +7,12 @@ export default function NotFound() {
   const t = getMessages();
   return (
     <Container>
-      <PageHeader title={t.errors.notFoundTitle} description={t.errors.notFoundBody} />
-      <ButtonLink href="/" variant="secondary">
-        {t.common.backHome}
-      </ButtonLink>
+      <div data-testid="not-found">
+        <PageHeader title={t.errors.notFoundTitle} description={t.errors.notFoundBody} />
+        <ButtonLink href="/" variant="secondary">
+          {t.common.backHome}
+        </ButtonLink>
+      </div>
     </Container>
   );
 }

@@ -17,14 +17,14 @@ Aplikacja webowa dla rynku polskiego do:
 Interfejs w całości po polsku (komunikaty, daty, kwoty w PLN), architektura gotowa na i18n.
 Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 
-## Stan na koniec etapu 7 (bieżący)
+## Stan na koniec etapu 8 (bieżący)
 
 ### Działa
 
 | Funkcja | Ścieżka | Uwagi |
 | --- | --- | --- |
 | Strona główna z listą ekranów i ich statusem | `/` | Status z `src/config/routes.ts` |
-| Profil i kalkulator zapotrzebowania | `/onboarding` | Walidacja na serwerze, brak zapisu danych |
+| Profil i kalkulator zapotrzebowania | `/onboarding` | Walidacja na serwerze; zapis w karcie, po zalogowaniu na koncie |
 | Ustawienia żywieniowe | `/ustawienia/zywienie` | Łączone sposoby żywienia, produkty, gotowanie; wykrywanie konfliktów |
 | Alergie i wykluczenia | `/ustawienia/alergie` | 14 alergenów UE (alergia / nietolerancja), ślady, własne wykluczenia |
 | Przepisy (lista + szczegóły) | `/przepisy`, `/przepisy/[id]` | Dane demo; kcal i makro ze składników; ocena zgodności z ustawieniami |
@@ -41,7 +41,7 @@ Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 | Panel, historia, konto | `/panel`, `/historia`, `/profil` | Zapis na koncie, usuwanie danych |
 | Zamiana posiłku | `/plan/posilki/[id]` | Tylko przepisy spełniające alergie i dietę |
 | Ekrany zastępcze | brak na tym etapie | — |
-| Strony błędów po polsku | 404, błąd | Bez stack trace'ów |
+| Strony błędów po polsku | 404, błąd, brak konfiguracji | Bez stack trace'ów; nagłówki bezpieczeństwa |
 
 ### Kalkulator (etap 2)
 
@@ -300,6 +300,12 @@ Bez `NEXT_PUBLIC_SUPABASE_URL` i `NEXT_PUBLIC_SUPABASE_ANON_KEY` — komunikat �
 
 RLS: użytkowniczka czyta/zapisuje tylko swoje wiersze; katalog publiczny tylko do odczytu.
 Migracji na projekt hostowany agent nie wgrywa (brak hasła bazy).
+
+### Weryfikacja (etap 8)
+
+Przegląd bezpieczeństwa (RLS, brak klucza admin w przeglądarce, nagłówki, callback bez open
+redirect), responsywność (E2E desktop + telefon, brak poziomego przewijania na ekranach), stany
+błędów (404, pusty plan, niewykonalny generator, brak konfiguracji). Start: `docs/URUCHOMIENIE.md`.
 
 ### Ograniczenia obecnej wersji
 

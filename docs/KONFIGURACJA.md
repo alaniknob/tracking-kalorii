@@ -119,3 +119,5 @@ musi być na liście w punkcie 3.
 5. Restart `npm run dev` / nowy deploy.
 6. Rejestracja testowa → panel nie pokazuje „Brak konfiguracji”.
 7. Usunięcie konta: migracja **albo** `SUPABASE_SERVICE_ROLE_KEY` po stronie serwera.
+
+Pełny start i lista gotowe / do zrobienia: `docs/URUCHOMIENIE.md`.

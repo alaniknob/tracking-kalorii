@@ -9,8 +9,10 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
   const t = getMessages();
   return (
     <Container>
-      <PageHeader title={t.errors.unexpectedTitle} description={t.errors.unexpectedBody} />
-      <Button onClick={reset}>{t.errors.retry}</Button>
+      <div data-testid="unexpected-error">
+        <PageHeader title={t.errors.unexpectedTitle} description={t.errors.unexpectedBody} />
+        <Button onClick={reset}>{t.errors.retry}</Button>
+      </div>
     </Container>
   );
 }

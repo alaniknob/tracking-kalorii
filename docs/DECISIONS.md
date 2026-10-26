@@ -322,3 +322,15 @@ nowej alergii (nadal pilnuje tego odcisk ustawień).
 Ręczna zamiana oferuje wyłącznie przepisy, które przechodzą `screenRecipes` (alergie, dieta,
 „wymaga weryfikacji”, czas, sprzęt). Porcję dobieramy pod kalorie dnia tą samą oceną co
 generator. Przepis wykluczony nie da się wstawić — wynik `infeasible`, komunikat po polsku.
+
+## D44. Nagłówki bezpieczeństwa bez ścisłego CSP
+
+Etap 8 dodaje `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` i wyłącza `X-Powered-By`.
+Ścisłe CSP wymaga nonce dla skryptów Next.js — odłożone, żeby nie zepsuć hydracji. Open redirect
+w `/auth/callback` jest blokowany (`isSafeInternalPath`).
+
+## D45. RODO: mechanizmy w kodzie ≠ ocena prawna
+
+Alergie i flagi zdrowotne to dane szczególnych kategorii. Rejestracja wymaga zgody, RLS ogranicza
+dostęp do właściciela, usunięcie konta kasuje wiersze. To nie zastępuje polityki prywatności,
+rejestru czynności ani DPIA — publiczny start wymaga osobnej oceny.

@@ -221,9 +221,9 @@ locale nie jest wprowadzony (jeden język) — decyzja w `DECISIONS.md`.
 
 ## API dla aplikacji mobilnej (zalążek)
 
-Route Handlers `src/app/api/v1/*`: `GET /api/v1/me`, `GET /api/v1/plans` (sesja ciasteczkowa
-Supabase). Bez konfiguracji → 503 `brak_konfiguracji`; bez sesji → 401. Dalsze endpointy
-(generator, zapis) dołożymy na tej samej logice domenowej. Bez mikroserwisów.
+Route Handlers `src/app/api/v1/*`: `GET /api/v1/me`, `GET /api/v1/plans` (sesja **ciasteczkowa**
+Supabase, bez Bearer). Bez konfiguracji → 503 `brak_konfiguracji`; bez sesji → 401. Dalsze
+endpointy (generator, zapis) dołożymy na tej samej logice domenowej. Bez mikroserwisów.
 
 ## Bezpieczeństwo i prywatność
 
@@ -231,8 +231,12 @@ Supabase). Bez konfiguracji → 503 `brak_konfiguracji`; bez sesji → 401. Dals
   serwera (opcjonalny, usuwanie konta gdy brak RPC). Zob. `.env.example` i `docs/KONFIGURACJA.md`.
 - Katalog w bazie: RLS, odczyt publiczny, zapis tylko `service_role`.
 - Dane użytkownika: RLS `auth.uid() = user_id` (migracja etapu 7). Usuwanie konta kasuje wiersze
-  kaskadą. Logi bez dumpowania profilu zdrowotnego.
-- Ocena RODO (dane szczególnych kategorii) przed publicznym startem — etap 8.
+  kaskadą. W `src/` nie ma `console.log` profilu zdrowotnego.
+- Nagłówki odpowiedzi (`src/lib/security-headers.ts`): `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `Permissions-Policy`; `poweredByHeader: false`. Callback `/auth/callback`
+  przyjmuje tylko wewnętrzne `next`.
+- RODO: zgoda przy rejestracji i usuwanie konta są w aplikacji; ocena prawna / DPIA / polityka
+  prywatności — **przed publicznym startem**, nie w kodzie etapu 8. Zob. `docs/URUCHOMIENIE.md`.
 
 ## Komendy
 

@@ -13,7 +13,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | 5 | Generator jadłospisu | ✅ zrobione |
 | 6 | Lista zakupów | ✅ zrobione |
 | 7 | Konta i trwałość (Supabase) | ✅ zrobione |
-| 8 | Weryfikacja końcowa | ⏳ |
+| 8 | Weryfikacja końcowa | ✅ zrobione |
 
 ## 1. Fundament — zrobione
 
@@ -100,8 +100,7 @@ zamiana posiłku w planie → etap 6.
 - Układ mobilny (bez poziomego przewijania, duże pola wyboru); linki z generatora i widoku tygodnia.
 - Testy: jednostkowe (`list.test.ts`) i E2E (`e2e/shopping.spec.ts`, desktop + telefon).
 
-Przeniesione: ręczna zamiana posiłku w planie → etap 7 (wymaga zapisu planu — dziś plan jest
-odtwarzany deterministycznie z ustawień, D35); ręczne pozycje listy i współdzielenie → etap 7.
+Przeniesione (zrobione w etapie 7): ręczna zamiana posiłku. Ręczne pozycje listy i współdzielenie — po etapie 8.
 
 ## 7. Konta i trwałość — zrobione
 
@@ -115,10 +114,20 @@ odtwarzany deterministycznie z ustawień, D35); ręczne pozycje listy i współd
 - RLS właściciela, testy SQL (`npm run test:sql`). API `GET /api/v1/me`, `GET /api/v1/plans`.
 - Instrukcja: `docs/KONFIGURACJA.md`. **Wymaga wgrania migracji na projekt Supabase.**
 
-Przeniesione: pełna ocena RODO / danych szczególnych kategorii → etap 8; `NutritionDataProvider`
-na żywych danych katalogu; ręczne pozycje listy i współdzielenie.
+Przeniesione: pełna ocena RODO / DPIA → przed publicznym startem (etap 8 to dokumentuje, nie zastępuje prawnika);
+`NutritionDataProvider` na żywych danych; ręczne pozycje listy i współdzielenie.
 
-## 8. Weryfikacja
+## 8. Weryfikacja — zrobione
 
-Pełne testy, przegląd bezpieczeństwa i RODO (dane szczególnych kategorii), responsywność,
-obsługa błędów, dokumentacja uruchomienia, lista gotowe / do zrobienia.
+- Testy etapów 1–7 ponownie zielone na etapie 7; etap 8 dodał E2E 404 / nagłówki / puste stany
+  i rozszerzył test braku poziomego przewijania na ekrany konta i ustawień.
+- Bezpieczeństwo: nagłówki (`nosniff`, `DENY`, referrer), `X-Powered-By` wyłączony, callback Auth
+  bez open redirect, RLS i SQL testy bez zmian modelu. CSP z nonce — później (Next.js inline).
+- Błędy: 404 i `global-error` po polsku, bez stack trace w UI; brak konfiguracji; pusty plan;
+  niewykonalny generator (już etap 5).
+- Dokumentacja: `docs/URUCHOMIENIE.md` (start, brakujące integracje, gotowe / do zrobienia),
+  `docs/KONFIGURACJA.md` (konta).
+- RODO: zgoda przy rejestracji + usuwanie konta są w kodzie; **brak** polityki prywatności i DPIA
+  — to blokuje publiczny start, nie rozwój lokalny.
+
+Poza mapą etapów 1–8: żywe dane katalogu/cen, AI, mobile natywne, reset hasła, 2FA, eksport listy.
