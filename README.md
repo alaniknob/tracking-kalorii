@@ -1,7 +1,8 @@
 # tracking-kalorii
 
 Aplikacja webowa (PL) do szacowania zapotrzebowania kalorycznego, planowania jadłospisów
-i optymalizacji kosztów zakupów. Stan: **etap 1 (fundament) + etap 2 (profil, kalkulator, preferencje, alergie)**.
+i optymalizacji kosztów zakupów. Stan: **etapy 1–3** — fundament; profil, kalkulator, preferencje, alergie; produkty i przepisy
+(wyłącznie dane przykładowe) z oceną zgodności i pierwszą migracją Supabase.
 
 ## Uruchomienie
 
@@ -9,7 +10,7 @@ Wymagania: Node.js ≥ 20.9.
 
 ```bash
 npm install
-cp .env.example .env.local   # opcjonalnie — etapy 1–2 nie wymagają zmiennych
+cp .env.example .env.local   # opcjonalnie — etapy 1–3 nie wymagają zmiennych
 npm run dev                   # http://localhost:3000
 ```
 

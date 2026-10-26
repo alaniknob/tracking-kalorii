@@ -37,7 +37,11 @@ src/
     allergens/            # CZYSTA logika: 14 alergenów UE, rodzaje wykluczeń, assessAllergens()
     preferences/          # reguły diet (diet-styles.ts), resolveFoodRules(), schematy Zod,
                           # evaluateDietSettings / evaluateRestrictions, akcje, formularze
-    products/ recipes/ pricing/ promotions/
+    products/             # typy, Zod, przeliczanie ilości (quantity.ts), kompletność danych,
+                          # dane demo, ProductCatalogProvider, generator seed.sql
+    recipes/              # calculateRecipeNutrition, evaluateRecipeFit, dane demo, katalog,
+                          # akcja oceny zgodności, komponenty (tabela wartości, plakietki)
+    pricing/ promotions/
     meal-planning/ shopping/ auth/   # planowane moduły (README z zakresem)
   i18n/
     config.ts             # obsługiwane locale (pl-PL)
@@ -45,7 +49,10 @@ src/
     format.ts             # Intl: liczby, kcal, g, %, PLN, daty
   lib/cn.ts               # łączenie klas Tailwind
 e2e/                      # testy Playwright
-supabase/migrations/      # wersjonowane migracje SQL (od etapu 3/7)
+supabase/
+  migrations/             # wersjonowane migracje SQL (od etapu 3)
+  seed.sql                # generowany z danych demo w TS
+  tests/                  # testy SQL (ograniczenia, RLS)
 ```
 
 ## Zasady warstw
@@ -91,12 +98,35 @@ supabase/migrations/      # wersjonowane migracje SQL (od etapu 3/7)
    └─ po success: zapis surowych wartości do sessionStorage (tylko ta karta)
 ```
 
+## Przepływ: katalog i ocena przepisów
+
+```
+catalog = createInMemoryCatalog(DEMO_PRODUCTS, DEMO_RECIPES, isDemo)   (features/recipes/catalog.ts)
+   │      implementuje ProductCatalogProvider / RecipeCatalogProvider
+   │      (etap 7: implementacja na Supabase o tym samym interfejsie)
+   ├─ /produkty, /przepisy, /przepisy/[id]   (Server Components, statyczne)
+   │     └─ calculateRecipeNutrition(recipe, products)
+   │          └─ toGrams (g/kg/ml/l/szt; masa sztuki, gęstość) → suma surowa
+   │             → na porcję, na 100 g potrawy (cooked_yield_g) + lista braków
+   └─ <RecipeFitProvider> (client) — czyta wersje robocze ustawień z sessionStorage
+        └─ evaluateRecipeFitAction(ids, dietDraft, restrictionsDraft) (server action)
+             ├─ resolveRulesFromDrafts → parseDraft (Zod) → resolveFoodRules
+             └─ evaluateRecipeFit: aggregateRecipeAllergens → assessAllergens,
+                recipeFoodGroups × forbiddenGroups, własne wykluczenia
+                → excluded | needs_verification | no_conflict_found
+```
+
+Strony z danymi są statyczne (bez danych użytkownika); ocena zgodności jest jedynym
+dynamicznym elementem i liczy się wyłącznie na serwerze. Dane demo trafiają do bazy przez
+`buildDemoSeedSql()` → `supabase/seed.sql` (test pilnuje, że plik jest aktualny).
+
 ## Ekrany i nawigacja
 
 Rejestr `src/config/routes.ts` jest jedynym źródłem informacji, czy ekran jest dostępny.
 Nawigacja i strona główna oznaczają niedostępne ekrany („Wkrótce”, „Niedostępne · Etap N”),
 a ich trasy renderują `UnavailableScreen` z opisem i numerem etapu. Test E2E sprawdza, że
-każdy link z listy ekranów zwraca HTTP 200.
+każdy link z listy ekranów zwraca HTTP 200. Główna nawigacja (`MAIN_NAV`, 5 pozycji) na
+telefonie jest osobnym wierszem-siatką pod logo (bez przewijania w poziomie — test E2E).
 
 ## i18n
 
@@ -114,7 +144,8 @@ pozostaną adapterem dla przeglądarki. Bez mikroserwisów.
 
 - Brak kluczy administracyjnych w przeglądarce: `SUPABASE_SERVICE_ROLE_KEY` tylko po stronie
   serwera (obecnie nieużywany). Zob. `.env.example`.
-- Dane zdrowotne nie są zapisywane ani logowane w etapach 1–2.
+- Dane zdrowotne nie są zapisywane ani logowane w etapach 1–3.
+- Katalog w bazie: RLS włączone, odczyt publiczny, zapis tylko `service_role` (migracja etapu 3).
 - Planowane: RLS dla wszystkich tabel użytkownika, usuwanie konta i danych, logi bez danych
   zdrowotnych, ocena RODO (dane szczególnych kategorii) przed publicznym startem.
 
@@ -129,3 +160,4 @@ pozostaną adapterem dla przeglądarki. Bez mikroserwisów.
 | `npm test` | Vitest (testy jednostkowe) |
 | `npm run test:e2e` | Playwright (wymaga wcześniejszego `npm run build`) |
 | `npm run check` | typecheck + lint + test + build |
+| `npm run db:seed:generate` | regeneruje `supabase/seed.sql` z danych demo |

@@ -17,10 +17,12 @@ export type ScreenId =
   | "week"
   | "meal"
   | "shopping"
+  | "recipes"
+  | "products"
   | "profileSettings"
   | "history";
 
-export type ScreenGroup = "start" | "account" | "settings" | "planning";
+export type ScreenGroup = "start" | "account" | "settings" | "planning" | "catalog";
 
 export interface ScreenDefinition {
   id: ScreenId;
@@ -54,11 +56,13 @@ export const SCREENS: Record<ScreenId, ScreenDefinition> = {
   week: { id: "week", path: "/plan", stage: 5, available: false, group: "planning", listed: true },
   meal: { id: "meal", path: "/plan/posilki", stage: 5, available: false, group: "planning", listed: false },
   shopping: { id: "shopping", path: "/zakupy", stage: 6, available: false, group: "planning", listed: true },
+  recipes: { id: "recipes", path: "/przepisy", stage: 3, available: true, group: "catalog", listed: true },
+  products: { id: "products", path: "/produkty", stage: 3, available: true, group: "catalog", listed: true },
   profileSettings: { id: "profileSettings", path: "/profil", stage: 7, available: false, group: "account", listed: true },
   history: { id: "history", path: "/historia", stage: 7, available: false, group: "planning", listed: true },
 };
 
-export const MAIN_NAV: ("onboarding" | "nutritionSettings" | "allergies" | "generator" | "shopping")[] = ["onboarding", "nutritionSettings", "allergies", "generator", "shopping"];
+export const MAIN_NAV = ["onboarding", "nutritionSettings", "allergies", "recipes", "generator"] as const satisfies readonly ScreenId[];
 
 export function listedScreens(): ScreenDefinition[] {
   return Object.values(SCREENS).filter((screen) => screen.listed);

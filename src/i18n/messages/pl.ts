@@ -1,6 +1,8 @@
 import type { ScreenId } from "@/config/routes";
 import type { AllergenCode, AllergenReaction, ExclusionKind } from "@/features/allergens/eu-allergens";
 import type { DietStyle, Difficulty, FoodGroup, KitchenEquipment } from "@/features/preferences/diet-styles";
+import type { DataCompleteness, ProductCategory } from "@/features/products/types";
+import type { MealType, RecipeReliability } from "@/features/recipes/types";
 import type {
   ActivityLevel,
   Goal,
@@ -39,8 +41,8 @@ export const pl = {
     onboarding: "Profil",
     nutritionSettings: "Żywienie",
     allergies: "Alergie",
+    recipes: "Przepisy",
     generator: "Generator",
-    shopping: "Zakupy",
   } satisfies Partial<Record<ScreenId, string>>,
   home: {
     ctaPrimary: "Oblicz zapotrzebowanie",
@@ -67,6 +69,7 @@ export const pl = {
       account: "Konto",
       settings: "Ustawienia",
       planning: "Planowanie",
+      catalog: "Katalog",
     },
   },
   screens: {
@@ -97,6 +100,14 @@ export const pl = {
     shopping: {
       title: "Lista zakupów",
       description: "Zsumowane składniki, opakowania, grupowanie wg sklepu i kategorii, odhaczanie kupionych.",
+    },
+    recipes: {
+      title: "Przepisy",
+      description: "Przepisy z kaloriami i makroskładnikami wyliczanymi ze składników oraz oceną zgodności z Twoimi alergiami i preferencjami.",
+    },
+    products: {
+      title: "Produkty",
+      description: "Katalog produktów: wartości odżywcze na 100 g / 100 ml, alergeny, kompletność danych i źródło.",
     },
     profileSettings: { title: "Ustawienia profilu", description: "Edycja profilu, eksport i usunięcie konta oraz danych." },
     history: { title: "Historia planów", description: "Poprzednie jadłospisy i listy zakupów." },
@@ -346,6 +357,104 @@ export const pl = {
       no_safe_deficit:
         "Twoje szacowane zapotrzebowanie jest zbyt niskie, by bezpiecznie zastosować deficyt — proponujemy kaloryczność równą TDEE. Skonsultuj cel ze specjalistą.",
     } satisfies Record<NutritionWarning, string>,
+  },
+  catalog: {
+    demoBadge: "Dane przykładowe",
+    demoNotice:
+      "Wszystkie produkty i przepisy na tym ekranie to dane przykładowe (demo): przybliżone wartości typowe dla kategorii, nie z etykiet konkretnych produktów. Nie zawierają cen.",
+    per100: (unit: "g" | "ml") => `na 100 ${unit}`,
+    noNutrition: "Brak danych o wartościach odżywczych",
+    unknownIngredients: "Skład nieznany — wymaga weryfikacji",
+    contains: "zawiera",
+    mayContain: "może zawierać",
+    noDeclaredAllergens: "Brak zadeklarowanych alergenów",
+    noDeclaredAllergensUnverified: "Brak zadeklarowanych alergenów (niepotwierdzone — skład nieznany)",
+    package: (size: string) => `Opakowanie: ${size}`,
+    byWeight: "Na wagę / sztuki",
+    piece: (grams: number) => `1 szt. ≈ ${grams} g`,
+    completeness: {
+      complete: "Dane pełne",
+      partial: "Dane częściowe",
+      minimal: "Dane minimalne",
+    } satisfies Record<DataCompleteness, string>,
+    categories: {
+      grains: "Zboża i makarony",
+      bakery: "Pieczywo",
+      dairy: "Nabiał",
+      eggs: "Jaja",
+      meat: "Mięso",
+      fish: "Ryby",
+      legumes: "Strączki i tofu",
+      vegetables: "Warzywa",
+      fruits: "Owoce",
+      nuts_seeds: "Orzechy i nasiona",
+      fats_oils: "Tłuszcze",
+      spices_condiments: "Przyprawy",
+      other: "Inne",
+    } satisfies Record<ProductCategory, string>,
+    source: "Źródło",
+    updatedAt: "Aktualizacja danych",
+  },
+  recipes: {
+    servings: (n: number) => `${n} ${n === 1 ? "porcja" : n < 5 ? "porcje" : "porcji"}`,
+    minutes: (n: number) => `${n} min`,
+    energy: "Energia",
+    fiber: "Błonnik",
+    valueColumn: "Wartość",
+    perServing: "Na porcję",
+    total: "Cały przepis",
+    per100Cooked: "Na 100 g potrawy",
+    servingMass: (g: number) => `Porcja ≈ ${g} g`,
+    rawMass: (g: number) => `Masa surowych składników ≈ ${g} g`,
+    cookedMass: (g: number) => `Masa po przygotowaniu ≈ ${g} g (szacunek)`,
+    incompleteData:
+      "Brakuje danych o części składników — podane wartości są zaniżone (dolna granica).",
+    fiberIncomplete: "Błonnik: część składników nie ma danych.",
+    calculatedNote: "Kalorie i makroskładniki są wyliczane ze składników (masa surowa), nie wpisywane ręcznie.",
+    ingredients: "Składniki",
+    instructions: "Przygotowanie",
+    allergens: "Alergeny (suma składników)",
+    foodGroups: "Grupy żywności",
+    noFoodGroups: "Bez mięsa, ryb, jaj, nabiału i miodu",
+    equipment: "Sprzęt",
+    reliability: {
+      tested: "Przepis przetestowany",
+      estimated: "Wartości szacunkowe",
+      unverified: "Przepis nieprzetestowany",
+    } satisfies Record<RecipeReliability, string>,
+    mealTypes: {
+      breakfast: "Śniadanie",
+      lunch: "Obiad",
+      dinner: "Kolacja",
+      snack: "Przekąska",
+    } satisfies Record<MealType, string>,
+    difficulty: { easy: "Łatwy", medium: "Średni" },
+    issue: {
+      unknown_product: (id: string) => `Nieznany produkt (${id}).`,
+      conversion_failed: (name: string) => `Nie można przeliczyć ilości produktu „${name}” (brak masy sztuki lub gęstości).`,
+      missing_nutrition: (name: string) => `„${name}” nie ma danych o wartościach odżywczych.`,
+    },
+    backToList: "Wszystkie przepisy",
+    details: "Szczegóły",
+    fit: {
+      loading: "Sprawdzanie zgodności z Twoimi ustawieniami…",
+      noSettings: "Ustaw preferencje i alergie, aby sprawdzić zgodność",
+      excluded: "Wykluczony dla Ciebie",
+      needs_verification: "Wymaga weryfikacji",
+      no_conflict_found: "Brak konfliktu z Twoimi ustawieniami",
+      noConflictNote: "Na podstawie dostępnych danych — to nie jest gwarancja braku alergenów.",
+      error: "Nie udało się sprawdzić zgodności. Spróbuj odświeżyć stronę.",
+      reasons: {
+        allergen: (allergen: string, declaration: string) => `Alergen: ${allergen} (${declaration}).`,
+        forbidden_group: (group: string) => `Zawiera grupę wykluczoną przez Twoje ustawienia: ${group}.`,
+        custom_exclusion: (label: string, kind: string, product: string) =>
+          `„${product}” pasuje do wykluczenia „${label}” (${kind}).`,
+        allergen_data_incomplete: "Co najmniej jeden składnik nie ma pełnych danych o składzie.",
+        allergen_traces: "Składnik może zawierać śladowe ilości alergenu, którego nie tolerujesz.",
+        custom_restriction_unverifiable: (label: string, kind: string) =>
+          `Nie da się potwierdzić braku „${label}” (${kind}) — skład części składników jest nieznany.`,
+      },
+    },
   },
   errors: {
     notFoundTitle: "Nie znaleziono strony",

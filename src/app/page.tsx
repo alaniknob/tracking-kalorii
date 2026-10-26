@@ -6,7 +6,7 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { listedScreens, SCREENS, type ScreenGroup } from "@/config/routes";
 import { getMessages } from "@/i18n";
 
-const GROUP_ORDER: ScreenGroup[] = ["start", "planning", "settings", "account"];
+const GROUP_ORDER: ScreenGroup[] = ["start", "settings", "catalog", "planning", "account"];
 
 export default function HomePage() {
   const t = getMessages();

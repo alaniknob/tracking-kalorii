@@ -17,7 +17,7 @@ Aplikacja webowa dla rynku polskiego do:
 Interfejs w całości po polsku (komunikaty, daty, kwoty w PLN), architektura gotowa na i18n.
 Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 
-## Stan na koniec etapu 2 (bieżący)
+## Stan na koniec etapu 3 (bieżący)
 
 ### Działa
 
@@ -27,6 +27,8 @@ Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 | Profil i kalkulator zapotrzebowania | `/onboarding` | Walidacja na serwerze, brak zapisu danych |
 | Ustawienia żywieniowe | `/ustawienia/zywienie` | Łączone sposoby żywienia, produkty, gotowanie; wykrywanie konfliktów |
 | Alergie i wykluczenia | `/ustawienia/alergie` | 14 alergenów UE (alergia / nietolerancja), ślady, własne wykluczenia |
+| Przepisy (lista + szczegóły) | `/przepisy`, `/przepisy/[id]` | Dane demo; kcal i makro ze składników; ocena zgodności z ustawieniami |
+| Produkty | `/produkty` | Dane demo; wartości na 100 g/ml, alergeny, kompletność, źródło |
 | Ekrany zastępcze (oznaczone „Niedostępne · Etap N”) | pozostałe | Brak martwych przycisków |
 | Strony błędów po polsku | 404, błąd | Bez stack trace'ów |
 
@@ -95,14 +97,53 @@ bieżącej karty (znikają po jej zamknięciu, przycisk „Wyczyść”). Przy z
 przeglądarka dołącza wersję roboczą drugiego, a serwer waliduje ją od nowa — dzięki temu
 konflikty między ekranami są wykrywane. Zmanipulowana wersja robocza jest pomijana.
 
+### Produkty i przepisy (etap 3)
+
+**Dane przykładowe.** Katalog zawiera wyłącznie **18 produktów ogólnych i 6 przepisów demo**
+(`src/features/products/demo-products.ts`, `src/features/recipes/demo-recipes.ts`). Wartości to
+przybliżone typowe wartości dla produktów generycznych, bez marek i bez cen; każdy rekord ma
+źródło „Dane przykładowe (demo)” i `is_demo = true`, a ekrany pokazują plakietkę
+„Dane przykładowe” i baner z wyjaśnieniem. Przepisy mają wiarygodność „niezweryfikowany”.
+
+**Produkt:** nazwa, kategoria, jednostka bazowa (g lub ml), opcjonalnie wielkość opakowania,
+masa sztuki, gęstość (g/ml), wartości na 100 g/ml (kcal, białko, tłuszcz, węglowodany, błonnik
+opcjonalnie), skład, zadeklarowane alergeny („zawiera” / „może zawierać”), grupy żywności
+(do reguł diet), źródło. **Kompletność danych:** pełne / częściowe (np. brak błonnika lub
+składu) / minimalne (brak wartości odżywczych). Spójność energii sprawdzana współczynnikami
+Atwatera (±15%).
+
+**Przepis:** składniki w ilościach **surowych** (g, kg, ml, l, szt), porcje, czas, trudność,
+wyposażenie, typ posiłku, opcjonalna masa po przygotowaniu. Kcal, makro i alergeny są
+**zawsze liczone ze składników** (`calculateRecipeNutrition`): suma, na porcję i — tylko gdy
+znana jest masa gotowej potrawy — na 100 g potrawy. Brak wartości odżywczych składnika, masy
+sztuki lub gęstości → ostrzeżenie „dane niepełne” z listą przyczyn, bez zgadywania.
+
+**Ocena zgodności przepisu** z ustawieniami z karty (`evaluateRecipeFit`, liczona na serwerze):
+
+| Wynik | Kiedy |
+| --- | --- |
+| **Wykluczony** | alergen zadeklarowany w składniku (lub „może zawierać” przy alergii z wykluczaniem śladów), grupa żywności wykluczona dietą, nielubiany / wykluczony produkt, własna alergia znaleziona w nazwie lub składzie |
+| **Wymaga weryfikacji** | nieznany skład dowolnego składnika przy wykluczonym alergenie lub własnej alergii/nietolerancji, „może zawierać” przy nietolerancji |
+| **Brak wykrytych konfliktów** | żadna z powyższych — **nigdy „bezpieczny”** |
+
+Bez zapisanych ustawień przepisy nie mają oceny (komunikat z linkiem do ustawień).
+
+**Baza danych:** pierwsza migracja katalogu (`supabase/migrations/20261026140000_catalog.sql`)
+z RLS — publiczny odczyt, zapis tylko `service_role`. Aplikacja na razie czyta dane z kodu
+przez interfejs `ProductCatalogProvider`; podłączenie Supabase — etap 7.
+
 ### Ograniczenia obecnej wersji
 
 - Brak kont i trwałego zapisu (wymaga Supabase — etap 7); preferencje tylko w karcie przeglądarki.
 - Kalkulator nie korzysta jeszcze z preferencji (będą użyte przez generator — etap 5).
-- Konflikty preferowanych produktów z dietą (np. „jogurt” przy diecie wegańskiej) wymagają
-  katalogu produktów z kategoriami — etap 3.
-- Budżet i sklepy — ekrany oznaczone jako niedostępne.
-- Brak katalogu produktów, przepisów, cen, generatora i listy zakupów.
+- Katalog to tylko dane demo; brak prawdziwego źródła danych odżywczych (planowane przez
+  `NutritionDataProvider`, etap 4+). Brak wyszukiwarki i dodawania produktów.
+- Konflikty preferowanych produktów z dietą (np. „jogurt” przy diecie wegańskiej) nie są
+  wykrywane — preferowane produkty to wolny tekst niepowiązany z katalogiem; przeniesione do
+  generatora (etap 5), który będzie dopasowywał je do produktów z kategoriami.
+- Dopasowanie własnych wykluczeń (wolny tekst) do produktów jest heurystyczne (fragment nazwy
+  lub składu) — dlatego przy nieznanym składzie wynik to „wymaga weryfikacji”.
+- Budżet i sklepy — ekrany oznaczone jako niedostępne. Brak cen, generatora i listy zakupów.
 
 ## Zakres docelowy (planowany)
 

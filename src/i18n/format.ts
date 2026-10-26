@@ -8,8 +8,8 @@ export function formatKcal(value: number, locale: Locale = DEFAULT_LOCALE): stri
   return `${formatNumber(value, locale)} kcal`;
 }
 
-export function formatGrams(value: number, locale: Locale = DEFAULT_LOCALE): string {
-  return `${formatNumber(value, locale)} g`;
+export function formatGrams(value: number, locale: Locale = DEFAULT_LOCALE, maximumFractionDigits = 0): string {
+  return `${formatNumber(value, locale, maximumFractionDigits)} g`;
 }
 
 export function formatPercent(fraction: number, locale: Locale = DEFAULT_LOCALE): string {

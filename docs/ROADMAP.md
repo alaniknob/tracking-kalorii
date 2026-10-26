@@ -8,7 +8,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | --- | --- | --- |
 | 1 | Fundament | ✅ zrobione |
 | 2 | Profil, kalkulator, preferencje, alergie | ✅ zrobione |
-| 3 | Produkty, przepisy, alergeny | ⏳ |
+| 3 | Produkty, przepisy, alergeny | ✅ zrobione |
 | 4 | Budżet, sklepy, ceny, promocje | ⏳ |
 | 5 | Generator jadłospisu | ⏳ |
 | 6 | Lista zakupów | ⏳ |
@@ -36,12 +36,23 @@ dobrowolne wykluczenia), silnik reguł z wykrywaniem konfliktów (`features/pref
 moduł `features/allergens` z oceną produktu (`needs_verification` zamiast „bezpieczny”),
 walidacja Zod na serwerze, tymczasowe przechowywanie w `sessionStorage`, testy jednostkowe i E2E.
 
-## 3. Produkty, przepisy, alergeny
+## 3. Produkty, przepisy, alergeny — zrobione
 
-Podłączenie `assessAllergens` do produktów i przepisów (wynik alergenów przepisu = suma
-składników), konflikty preferowanych produktów z dietą na podstawie kategorii, modele produktów i wartości odżywczych, receptury ze składnikami, przeliczanie gramatur
-(g/ml/szt, surowe vs po przygotowaniu), kcal i makro liczone ze składników, dane demo oznaczone
-`is_demo`. Pierwsze migracje katalogu + RLS publicznego odczytu.
+- Modele produktu i przepisu (`features/products`, `features/recipes`), schemat Zod produktu
+  (zakresy, suma makro, spójność energii), kompletność danych wyliczana z danych.
+- Przeliczanie ilości g/kg/ml/l/szt (masa sztuki, gęstość) i liczba opakowań; błędy zamiast zgadywania.
+- Kcal i makro przepisu ze składników surowych; na porcję i na 100 g potrawy (masa po przygotowaniu).
+- `assessAllergens` podłączone do przepisów (alergeny przepisu = suma składników) + grupy
+  żywności, nielubiane i własne wykluczenia → `evaluateRecipeFit` (wykluczony / wymaga
+  weryfikacji / brak wykrytych konfliktów), ocena na serwerze z ustawień z karty.
+- Ekrany `/produkty`, `/przepisy`, `/przepisy/[id]` z oznaczonymi danymi demo (18 produktów, 6 przepisów).
+- Interfejsy `ProductCatalogProvider` / `RecipeCatalogProvider` (implementacja w pamięci).
+- Migracja katalogu z RLS (publiczny odczyt, zapis `service_role`), `seed.sql` generowany
+  z kodu i pilnowany testem, testy SQL — sprawdzone na lokalnym PostgreSQL 16.
+- Nawigacja mobilna bez przewijania w poziomie (test E2E).
+
+Przeniesione: konflikty preferowanych produktów (wolny tekst) z dietą → etap 5 (dopasowanie
+do katalogu w generatorze).
 
 ## 4. Budżet i sklepy
 

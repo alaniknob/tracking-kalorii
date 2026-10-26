@@ -1,9 +1,11 @@
 # Model danych
 
-> **Stan obecny (koniec etapu 2): aplikacja nie korzysta z bazy danych.** Brak migracji w
-> `supabase/migrations/`. Poniżej docelowy schemat PostgreSQL (Supabase) — zostanie wprowadzony
-> migracjami w etapach 3, 4, 5, 6 i 7. Typy domenowe w kodzie (`src/features/*/types.ts`) są
-> zgodne z nazwami kolumn (camelCase ↔ snake_case).
+> **Stan obecny (koniec etapu 3):** istnieje pierwsza migracja — katalog publiczny
+> (`supabase/migrations/20261026140000_catalog.sql`, sekcja „Katalog publiczny” poniżej opisuje
+> ją dokładnie). Aplikacja jeszcze **nie łączy się** z bazą: katalog demo czyta z kodu przez
+> `ProductCatalogProvider`, a `supabase/seed.sql` jest generowany z tych samych danych.
+> Pozostałe tabele to schemat docelowy (etapy 4–7). Typy domenowe w kodzie
+> (`src/features/*/types.ts`) są zgodne z nazwami kolumn (camelCase ↔ snake_case).
 
 ## Typy domenowe już zdefiniowane w kodzie
 
@@ -31,8 +33,17 @@
 | `Difficulty` | `easy`, `medium`, `any` |
 | `FoodRules` | wynik silnika reguł: wykluczone/wymagane grupy, alergeny, własne wykluczenia, preferowane, konflikty |
 
-Produkty w katalogu (etap 3) dostaną `food_groups text[]` (wartości `FoodGroup`), aby reguły
-diet mogły je filtrować.
+`src/features/products/types.ts` i `src/features/recipes/types.ts` (etap 3):
+
+| Typ | Wartości |
+| --- | --- |
+| `ProductCategory` | `grains`, `bakery`, `dairy`, `eggs`, `meat`, `fish`, `legumes`, `vegetables`, `fruits`, `nuts_seeds`, `fats_oils`, `spices_condiments`, `other` |
+| `BaseUnit` / `QuantityUnit` | `g`, `ml` / `g`, `kg`, `ml`, `l`, `szt` |
+| `DataCompleteness` | `complete`, `partial`, `minimal` — **wyliczana** w kodzie, nie przechowywana |
+| `Product` | wartości na 100 g/ml (`nutrition` lub `null`), `allergens: AllergenInfo`, `foodGroups`, `source { name, url, isDemo }` |
+| `Recipe` | składniki `{ productId, amount, unit }` w stanie surowym, `cookedYieldG` lub `null`, `reliability`, bez pól kcal |
+| `RecipeReliability` | `tested`, `estimated`, `unverified` |
+| `MealType` | `breakfast`, `lunch`, `dinner`, `snack` |
 
 ## Zasady ogólne
 
@@ -73,31 +84,52 @@ Preferowane produkty: `user_preferred_products` (`user_id`, `product_id null`, `
 
 **`pantry_items`** (zapasy) — `user_id`, `product_id`, `quantity_g`, `expires_on date null`.
 
-### Katalog publiczny (etap 3–4)
+### Katalog publiczny (etap 3 — zaimplementowane w migracji `20261026140000_catalog.sql`)
 
-**`allergens`** — 14 alergenów UE (rozp. 1169/2011, zał. II): `code` PK
-(`gluten`, `crustaceans`, `eggs`, `fish`, `peanuts`, `soybeans`, `milk`, `nuts`, `celery`,
-`mustard`, `sesame`, `sulphites`, `lupin`, `molluscs`), `name_pl`.
+**`allergens`** — 14 alergenów UE (rozp. 1169/2011, zał. II), wstawiane w migracji:
+`code text` PK (`gluten`, `crustaceans`, `eggs`, `fish`, `peanuts`, `soybeans`, `milk`, `nuts`,
+`celery`, `mustard`, `sesame`, `sulphites`, `lupin`, `molluscs`), `name_pl`, `sort_order` unikalny.
 
-**`products`** — `id`, `name`, `brand null`, `category text not null`, `unit text`,
-`package_size numeric null`, `ingredients_text text null`, `source text not null`,
-`source_url text null`, `data_completeness text check in (complete, partial, minimal)`,
-`is_demo boolean not null default false`, `updated_at`.
+**`products`** — `id uuid` PK, `slug text unique` (identyfikator z kodu, `^[a-z0-9-]+$`),
+`name` (2–120 znaków), `brand null`, `category text check in (…ProductCategory)`,
+`base_unit text check in (g, ml)`, `package_size numeric(10,2) null > 0`,
+`grams_per_piece numeric(8,2) null > 0`, `density_g_per_ml numeric(5,3) null` (0,2–3),
+`ingredients_text null`, `ingredients_known boolean default false` (false = skład nieznany;
+`check (not ingredients_known or ingredients_text is not null)`),
+`food_groups text[] default '{}'` (podzbiór `FoodGroup`, indeks GIN), `source_name not null`,
+`source_url null`, `is_demo boolean default false`, `created_at`, `updated_at` (trigger
+`set_updated_at`). Indeks na `category`. **Kompletność danych nie jest kolumną** — liczy ją
+`dataCompleteness()` w kodzie, żeby nie rozjechała się z danymi.
 
-**`product_nutrition`** — 1:1 z `products`: `per_basis text check in (100g, 100ml)`, `kcal`,
-`protein_g`, `fat_g`, `carbohydrates_g`, `fiber_g null`, `check (kcal >= 0 …)`.
+**`product_nutrition`** — 1:1 z `products` (`product_id` PK, cascade). Wartości na 100 jednostek
+bazowych produktu (100 g lub 100 ml wg `base_unit`): `kcal numeric(6,1)` 0–900, `protein_g`,
+`fat_g`, `carbohydrates_g` `numeric(5,2)` 0–100, `fiber_g null`; `check` suma makro + błonnik
+≤ 100,5. **Brak wiersza = brak danych**, nie zera.
 
-**`product_allergens`** — `product_id`, `allergen_code`,
-`status text check in (contains, may_contain, free_from_declared)`. Brak wiersza = **brak
-wiedzy**, a nie „nie zawiera” — produkt bez kompletnego składu ma status „wymaga weryfikacji”.
+**`product_allergens`** — PK (`product_id`, `allergen_code` FK → `allergens`),
+`declaration text check in (contains, may_contain)`, indeks na `allergen_code`. Brak wiersza =
+**brak wiedzy**, a nie „nie zawiera” — o tym, czy brak deklaracji coś znaczy, decyduje
+`products.ingredients_known`; bez znanego składu produkt „wymaga weryfikacji”.
 
-**`recipes`** — `id`, `name`, `description`, `servings smallint > 0`, `prep_minutes`,
-`instructions text`, `equipment text[]`, `source`, `reliability text`, `is_demo boolean`,
-`cooked_yield_g numeric null` (masa po przygotowaniu). Kcal/makro/alergeny **wyliczane** ze
-składników (widok lub funkcja), nie przechowywane na sztywno.
+**`recipes`** — `id uuid` PK, `slug unique`, `name`, `description`, `meal_types text[]`
+(niepusty podzbiór `MealType`), `servings smallint` 1–20, `prep_minutes` 0–600,
+`difficulty check in (easy, medium)`, `equipment text[]` (podzbiór `KitchenEquipment`),
+`instructions text[]` niepuste, `cooked_yield_g numeric(8,1) null > 0` (masa po
+przygotowaniu), `reliability check in (tested, estimated, unverified)`, `source_name`,
+`source_url null`, `is_demo`, `created_at`, `updated_at` (trigger). Kcal/makro/alergeny
+**nie są przechowywane** — liczy je kod (`calculateRecipeNutrition`, `evaluateRecipeFit`)
+ze składników, bez widoku SQL (jedna implementacja, testowana w Vitest).
 
-**`recipe_ingredients`** — `recipe_id` FK (cascade), `product_id` FK, `quantity_g numeric > 0`
-(masa surowa), `optional boolean`, indeks na `product_id`.
+**`recipe_ingredients`** — `id uuid` PK, `recipe_id` FK (cascade), `product_id` FK
+(`on delete restrict` — nie można usunąć produktu używanego w przepisie), `position` (unikalna
+w przepisie), `amount numeric(10,3) > 0` w stanie **surowym**, `unit check in (g, kg, ml, l, szt)`,
+`note null`, indeks na `product_id`. Przeliczenie na gramy w kodzie (`toGrams`: `szt` wymaga
+`grams_per_piece`, ml↔g wymaga `density_g_per_ml`).
+
+**Dane:** `supabase/seed.sql` (generowany z `demo-products.ts` / `demo-recipes.ts`, wszystkie
+rekordy `is_demo = true`). Testy SQL: `supabase/tests/catalog.test.sql`.
+
+### Katalog publiczny (etap 4 — planowane)
 
 **`stores`** — `id`, `name` (Lidl, Biedronka, Kaufland, Aldi, Carrefour, Auchan, …), `chain`,
 `is_active`. Lista konfigurowalna.
@@ -126,7 +158,15 @@ provider, estimate)`, `is_estimate boolean`, `valid_until null`. Indeks
 `quantity_g`, `packages smallint`, `package_price_pln null`, `price_status text`, `in_pantry boolean`,
 `checked boolean`.
 
-## Polityki RLS (etap 7)
+## Polityki RLS
+
+**Zaimplementowane (etap 3)** dla `allergens`, `products`, `product_nutrition`,
+`product_allergens`, `recipes`, `recipe_ingredients`: `enable row level security`, polityka
+`<tabela>_public_read` (`for select to anon, authenticated using (true)`), `revoke insert,
+update, delete, truncate` od `anon` i `authenticated`. Zapis wyłącznie przez `service_role`
+(omija RLS). Sprawdzone testem `supabase/tests/catalog.test.sql` na PostgreSQL 16.
+
+**Docelowo (etapy 4–7):**
 
 | Grupa tabel | SELECT | INSERT/UPDATE/DELETE |
 | --- | --- | --- |

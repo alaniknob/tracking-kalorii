@@ -54,6 +54,16 @@ const toDietRules = (diet: DietSettings) => ({
   preferredProducts: diet.preferredProducts,
 });
 
+/** Reguły z wersji roboczych obu ekranów (niezaufane dane z przeglądarki, walidowane od nowa). */
+export function resolveRulesFromDrafts(dietDraftJson: string, restrictionsDraftJson: string) {
+  const diet = parseDraft<DietSettings>(dietDraftJson, dietDraftSchema, dietSettingsSchema);
+  const restrictions = parseDraft<RestrictionsSettings>(restrictionsDraftJson, restrictionsDraftSchema, restrictionsSchema);
+  return {
+    hasSettings: diet !== null || restrictions !== null,
+    rules: resolveFoodRules(diet ? toDietRules(diet) : null, restrictions),
+  };
+}
+
 export function evaluateDietSettings(values: DietFormValues, restrictionsDraftJson = ""): DietFormState {
   const parsed = dietSettingsSchema.safeParse(values);
   if (!parsed.success) {

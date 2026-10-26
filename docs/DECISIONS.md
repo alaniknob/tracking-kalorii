@@ -113,3 +113,51 @@ konflikty między dwoma ekranami, przeglądarka trzyma surowe wartości formular
 serwer waliduje ją tym samym schematem Zod co formularz, a niepoprawną pomija. W etapie 7
 zostanie to zastąpione zapisem w Supabase (tabele `user_preferences`, `user_exclusions`).
 Dopasowanie produktów tekstowych: normalizacja (NFC, małe litery `pl-PL`, spacje).
+
+## D17. Przepisy: ilości surowe, wartości zawsze wyliczane
+
+Składniki przepisu są zapisane w stanie **surowym** (tak jak się je kupuje i waży), a kcal,
+makro i alergeny przepisu są zawsze liczone ze składników (`calculateRecipeNutrition`) — nie ma
+ich ani w typie `Recipe`, ani w tabeli `recipes`. Masa po przygotowaniu (`cooked_yield_g`)
+służy tylko do przeliczenia „na 100 g potrawy”; gdy jej brak, tej wartości nie pokazujemy
+(woda odparowuje / wchłania się — zgadywanie dawałoby błędne liczby). Brakujące dane składnika
+(wartości odżywcze, masa sztuki, gęstość) dają ostrzeżenie „dane niepełne”, nie zero.
+
+## D18. Ocena przepisu: trzy stany, nigdy „bezpieczny”
+
+`evaluateRecipeFit` zwraca `excluded`, `needs_verification` albo `no_conflict_found`
+(UI: „Brak wykrytych konfliktów”). Alergeny przepisu = suma alergenów składników, „zawiera”
+wygrywa z „może zawierać”; nieznany skład **dowolnego** składnika oznacza nieznany skład
+przepisu. Wykluczenie zawsze wygrywa z weryfikacją; preferencje nie łagodzą żadnego wykluczenia.
+
+## D19. Własne wykluczenia — dopasowanie heurystyczne
+
+Inne alergie, nietolerancje i dobrowolne wykluczenia to wolny tekst. Dopasowujemy je po
+znormalizowanym fragmencie nazwy produktu (a dla alergii i nietolerancji także składu).
+To heurystyka: brak dopasowania przy nieznanym składzie któregokolwiek składnika daje
+„wymaga weryfikacji”, nie „brak konfliktów”. Dokładne dopasowanie wymaga powiązania
+wykluczeń z produktami z katalogu (etap 7, `user_exclusions.product_id`).
+
+## D20. Wyłącznie dane przykładowe, wyraźnie oznaczone
+
+Bez licencjonowanego źródła danych nie publikujemy wartości jako „prawdziwych”. Katalog demo
+to produkty generyczne bez marek i cen, z przybliżonymi wartościami typowymi; każdy rekord ma
+`source.isDemo` / `is_demo = true`, przepisy mają wiarygodność „niezweryfikowany”, a ekrany
+pokazują plakietkę i baner „Dane przykładowe”. Prawdziwe źródła — przez interfejsy dostawców.
+
+## D21. Dostawcy katalogu i seed generowany z kodu
+
+Strony korzystają z `ProductCatalogProvider` / `RecipeCatalogProvider`; teraz implementacja
+w pamięci, w etapie 7 — Supabase, bez zmian w logice. Jedynym źródłem danych demo jest
+TypeScript; `supabase/seed.sql` generuje `buildDemoSeedSql()`, a test Vitest nie przepuści
+nieaktualnego pliku (`npm run db:seed:generate`). Kompletność danych nie jest kolumną —
+jest wyliczana, żeby nie mogła rozjechać się z danymi. RLS katalogu: odczyt dla `anon` i
+`authenticated`, zapis tylko `service_role`; schemat i RLS sprawdzone na PostgreSQL 16
+(`supabase/tests/catalog.test.sql`).
+
+## D22. Nawigacja mobilna jako siatka
+
+Pięć pozycji głównej nawigacji nie mieści się obok logo na telefonie. Zamiast przewijania
+w poziomie (słabo odkrywalne) nawigacja na wąskich ekranach jest osobnym wierszem
+`grid-cols-5` z krótkimi etykietami; od `sm` — jeden wiersz. Lista zakupów wypadła
+z głównej nawigacji (dostępna ze strony głównej) do czasu etapu 6.
