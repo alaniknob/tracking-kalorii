@@ -1,4 +1,6 @@
 import type { ScreenId } from "@/config/routes";
+import type { AllergenCode, AllergenReaction, ExclusionKind } from "@/features/allergens/eu-allergens";
+import type { DietStyle, Difficulty, FoodGroup, KitchenEquipment } from "@/features/preferences/diet-styles";
 import type {
   ActivityLevel,
   Goal,
@@ -32,6 +34,14 @@ export const pl = {
     estimateDisclaimer:
       "Wyniki są szacunkiem na podstawie wzorów populacyjnych, a nie pomiarem medycznym. W razie wątpliwości skonsultuj się z lekarzem lub dietetykiem.",
   },
+  /** Krótkie etykiety głównej nawigacji. */
+  nav: {
+    onboarding: "Profil",
+    nutritionSettings: "Żywienie",
+    allergies: "Alergie",
+    generator: "Generator",
+    shopping: "Zakupy",
+  } satisfies Partial<Record<ScreenId, string>>,
   home: {
     ctaPrimary: "Oblicz zapotrzebowanie",
     ctaScreens: "Zobacz plan rozwoju",
@@ -46,8 +56,8 @@ export const pl = {
         body: "Brak skrajnie niskich kalorii, limit tempa redukcji, osobne zasady dla osób niepełnoletnich, w ciąży i z chorobami.",
       },
       {
-        title: "Walidacja po stronie serwera",
-        body: "Każde dane z formularza są sprawdzane na serwerze — wartości dające błędne wyniki są odrzucane.",
+        title: "Preferencje, alergie i konflikty",
+        body: "Łączone sposoby żywienia, 14 alergenów UE, nietolerancje i wykluczenia. Sprzeczności są wykrywane, a alergie zawsze mają pierwszeństwo.",
       },
     ],
     screensTitle: "Ekrany aplikacji",
@@ -163,6 +173,126 @@ export const pl = {
     targetBelowCurrent: "Przy redukcji masa docelowa musi być niższa od obecnej.",
     targetAboveCurrent: "Przy zwiększaniu masy masa docelowa musi być wyższa od obecnej.",
     unexpected: "Nie udało się wykonać obliczeń. Spróbuj ponownie za chwilę.",
+    textTooLong: (max: number) => `Tekst może mieć maksymalnie ${max} znaków.`,
+    textItemLength: (min: number, max: number) => `Każda pozycja musi mieć od ${min} do ${max} znaków.`,
+    textListMax: (max: number) => `Możesz podać maksymalnie ${max} pozycji.`,
+    dietStylesRequired: "Wybierz co najmniej jeden sposób żywienia.",
+    conflictsBlocking: "Ustawienia zawierają sprzeczności — popraw je, aby można było je przyjąć.",
+  },
+  preferences: {
+    draftNote:
+      "Do czasu założenia kont ustawienia są przechowywane wyłącznie w tej karcie przeglądarki (sessionStorage) i znikają po jej zamknięciu. Serwer każdorazowo sprawdza je ponownie.",
+    draftIncludedAllergies: "Uwzględniono też Twoje ustawienia z ekranu „Alergie i wykluczenia”.",
+    draftIncludedDiet: "Uwzględniono też Twoje ustawienia z ekranu „Ustawienia żywieniowe”.",
+    clearDraft: "Wyczyść ustawienia z tej karty",
+    submit: "Sprawdź i zapisz w tej karcie",
+    submitting: "Sprawdzanie…",
+    saved: "Ustawienia są spójne i zostały zapisane w tej karcie przeglądarki.",
+    sections: {
+      diet: "Sposób żywienia",
+      dietHint: "Możesz łączyć kilka opcji — np. „Bezmięsna” + „Z rybami” to dieta pescowegetariańska.",
+      products: "Produkty",
+      practical: "Gotowanie",
+      eu: "Alergeny wymagające oznaczania w UE",
+      euHint:
+        "Alergia — wykluczamy produkt także przy deklaracji „może zawierać” (jeśli zaznaczysz poniżej). Nietolerancja — wykluczamy produkty zawierające składnik.",
+      custom: "Inne alergie, nietolerancje i wykluczenia",
+    },
+    fields: {
+      dislikedProducts: "Nielubiane produkty",
+      preferredProducts: "Preferowane produkty",
+      listHint: "Oddziel przecinkami, np. „brokuły, seler naciowy”.",
+      maxIngredients: "Maks. liczba składników w przepisie",
+      maxPrepMinutes: "Maks. czas przygotowania posiłku",
+      difficulty: "Trudność przepisów",
+      equipment: "Dostępne wyposażenie kuchni",
+      useLeftovers: "Wykorzystuj resztki z poprzednich posiłków",
+      otherAllergies: "Inne alergie pokarmowe",
+      otherIntolerances: "Inne nietolerancje",
+      voluntaryExclusions: "Dobrowolne wykluczenia",
+      voluntaryHint: "Produkty, których nie chcesz jeść z innych powodów (np. etycznych, religijnych).",
+      avoidTraces: "Przy alergiach wykluczaj produkty z informacją „może zawierać” (zanieczyszczenie krzyżowe)",
+    },
+    noLimit: "Bez limitu",
+    minutes: (n: string) => `${n} min`,
+    dietStyles: {
+      traditional: "Tradycyjna",
+      vegetarian: "Wegetariańska",
+      vegan: "Wegańska",
+      meatless: "Bezmięsna",
+      with_fish: "Z rybami",
+      no_fish: "Bez ryb",
+      with_meat: "Z mięsem",
+    } satisfies Record<DietStyle, string>,
+    foodGroups: {
+      meat: "mięso",
+      fish: "ryby",
+      seafood: "owoce morza",
+      eggs: "jaja",
+      dairy: "nabiał",
+      honey: "miód",
+    } satisfies Record<FoodGroup, string>,
+    difficulty: { easy: "Tylko proste", medium: "Proste i średnie", any: "Dowolna" } satisfies Record<Difficulty, string>,
+    equipment: {
+      stove: "Kuchenka / płyta",
+      oven: "Piekarnik",
+      microwave: "Mikrofalówka",
+      blender: "Blender",
+      air_fryer: "Frytkownica beztłuszczowa",
+      slow_cooker: "Wolnowar",
+    } satisfies Record<KitchenEquipment, string>,
+    allergens: {
+      gluten: "Zboża zawierające gluten",
+      crustaceans: "Skorupiaki",
+      eggs: "Jaja",
+      fish: "Ryby",
+      peanuts: "Orzeszki ziemne (arachidowe)",
+      soybeans: "Soja",
+      milk: "Mleko (w tym laktoza)",
+      nuts: "Orzechy",
+      celery: "Seler",
+      mustard: "Gorczyca",
+      sesame: "Nasiona sezamu",
+      sulphites: "Dwutlenek siarki i siarczyny",
+      lupin: "Łubin",
+      molluscs: "Mięczaki",
+    } satisfies Record<AllergenCode, string>,
+    reactions: { none: "Nie dotyczy", allergy: "Alergia", intolerance: "Nietolerancja" } satisfies Record<
+      AllergenReaction,
+      string
+    >,
+    exclusionKinds: {
+      allergy: "alergia",
+      intolerance: "nietolerancja",
+      voluntary: "wykluczenie dobrowolne",
+      dislike: "nielubiany",
+    } satisfies Record<ExclusionKind, string>,
+    summary: {
+      title: "Wynikowe reguły dla jadłospisu",
+      forbidden: "Wykluczone grupy",
+      required: "Mają pojawiać się w planie",
+      allergens: "Wykluczone alergeny",
+      traces: "także „może zawierać”",
+      custom: "Własne wykluczenia",
+      preferred: "Preferowane produkty",
+      none: "Brak",
+      conflictsBlocking: "Sprzeczności do poprawienia",
+      conflictsResolved: "Konflikty rozstrzygnięte automatycznie",
+      priority: "Kolejność ważności: alergie i nietolerancje > sposób żywienia > preferencje smakowe i cena.",
+      verificationNote:
+        "Brak alergenu w nazwie produktu nie oznacza jego braku. Produkty bez pełnych danych o składzie będą oznaczane jako „wymaga weryfikacji”.",
+    },
+    conflicts: {
+      dietContradiction: (required: string, requiredBy: string, forbiddenBy: string) =>
+        `„${requiredBy}” wymaga produktów z grupy „${required}”, a „${forbiddenBy}” je wyklucza. Odznacz jedną z opcji.`,
+      pescatarianHint: "Jeśli jesz ryby, ale nie mięso, wybierz „Bezmięsna” + „Z rybami”.",
+      restrictionOverridesDiet: (group: string, requiredBy: string, allergen: string, kind: string) =>
+        `${kind[0].toUpperCase()}${kind.slice(1)} („${allergen}”) wyklucza grupę „${group}”, więc wymaganie „${requiredBy}” nie będzie stosowane.`,
+      productPreferredAndDisliked: (product: string) =>
+        `„${product}” jest jednocześnie na liście preferowanych i nielubianych produktów.`,
+      preferredProductExcluded: (product: string, kind: string) =>
+        `„${product}” usunięto z preferowanych, bo jest wykluczony (${kind}).`,
+    },
   },
   nutrition: {
     resultTitle: "Twoje szacunkowe zapotrzebowanie",

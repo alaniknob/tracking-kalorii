@@ -7,7 +7,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | # | Etap | Status |
 | --- | --- | --- |
 | 1 | Fundament | ✅ zrobione |
-| 2 | Profil i kalkulator | 🟡 częściowo (2a zrobione, 2b do zrobienia) |
+| 2 | Profil, kalkulator, preferencje, alergie | ✅ zrobione |
 | 3 | Produkty, przepisy, alergeny | ⏳ |
 | 4 | Budżet, sklepy, ceny, promocje | ⏳ |
 | 5 | Generator jadłospisu | ⏳ |
@@ -29,15 +29,17 @@ w `src/config/routes.ts` i widoczny w UI.
 TDEE, cel kaloryczny z limitami, makro, zasady bezpieczeństwa (niepełnoletni, ciąża, karmienie,
 choroby, niedowaga), testy jednostkowe i E2E.
 
-**2b — do zrobienia:** ekran „Ustawienia żywieniowe” (sposób żywienia jako łączone reguły,
-nielubiane produkty, liczba składników, czas, trudność, wyposażenie, resztki), silnik reguł
-preferencji z wykrywaniem konfliktów (`features/preferences`) + testy; formularz alergii /
-nietolerancji / wykluczeń (wymaga słownika alergenów z etapu 3 — można przenieść).
+**2b — zrobione:** ekran „Ustawienia żywieniowe” (łączone sposoby żywienia, nielubiane i
+preferowane produkty, liczba składników, czas, trudność, wyposażenie, resztki), ekran „Alergie
+i wykluczenia” (14 alergenów UE: alergia / nietolerancja, ślady, inne alergie, nietolerancje,
+dobrowolne wykluczenia), silnik reguł z wykrywaniem konfliktów (`features/preferences`),
+moduł `features/allergens` z oceną produktu (`needs_verification` zamiast „bezpieczny”),
+walidacja Zod na serwerze, tymczasowe przechowywanie w `sessionStorage`, testy jednostkowe i E2E.
 
 ## 3. Produkty, przepisy, alergeny
 
-Moduł `allergens` (14 alergenów UE, statusy `zawiera / może zawierać / wymaga weryfikacji`),
-modele produktów i wartości odżywczych, receptury ze składnikami, przeliczanie gramatur
+Podłączenie `assessAllergens` do produktów i przepisów (wynik alergenów przepisu = suma
+składników), konflikty preferowanych produktów z dietą na podstawie kategorii, modele produktów i wartości odżywczych, receptury ze składnikami, przeliczanie gramatur
 (g/ml/szt, surowe vs po przygotowaniu), kcal i makro liczone ze składników, dane demo oznaczone
 `is_demo`. Pierwsze migracje katalogu + RLS publicznego odczytu.
 

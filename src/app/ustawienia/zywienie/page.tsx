@@ -1,7 +1,18 @@
-import { UnavailableScreen, unavailableMetadata } from "@/components/layout/unavailable-screen";
+import type { Metadata } from "next";
+import { Container } from "@/components/layout/container";
+import { PageHeader } from "@/components/layout/page-header";
+import { DietSettingsForm } from "@/features/preferences/components/diet-settings-form";
+import { getMessages } from "@/i18n";
 
-export const metadata = unavailableMetadata("nutritionSettings");
+const t = getMessages();
 
-export default function Page() {
-  return <UnavailableScreen id="nutritionSettings" />;
+export const metadata: Metadata = { title: t.screens.nutritionSettings.title };
+
+export default function NutritionSettingsPage() {
+  return (
+    <Container>
+      <PageHeader title={t.screens.nutritionSettings.title} description={t.screens.nutritionSettings.description} />
+      <DietSettingsForm />
+    </Container>
+  );
 }

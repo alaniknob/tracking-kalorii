@@ -1,7 +1,18 @@
-import { UnavailableScreen, unavailableMetadata } from "@/components/layout/unavailable-screen";
+import type { Metadata } from "next";
+import { Container } from "@/components/layout/container";
+import { PageHeader } from "@/components/layout/page-header";
+import { RestrictionsForm } from "@/features/preferences/components/restrictions-form";
+import { getMessages } from "@/i18n";
 
-export const metadata = unavailableMetadata("allergies");
+const t = getMessages();
 
-export default function Page() {
-  return <UnavailableScreen id="allergies" />;
+export const metadata: Metadata = { title: t.screens.allergies.title };
+
+export default function AllergiesPage() {
+  return (
+    <Container>
+      <PageHeader title={t.screens.allergies.title} description={t.screens.allergies.description} />
+      <RestrictionsForm />
+    </Container>
+  );
 }

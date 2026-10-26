@@ -43,11 +43,11 @@ export const SCREENS: Record<ScreenId, ScreenDefinition> = {
     id: "nutritionSettings",
     path: "/ustawienia/zywienie",
     stage: 2,
-    available: false,
+    available: true,
     group: "settings",
     listed: true,
   },
-  allergies: { id: "allergies", path: "/ustawienia/alergie", stage: 3, available: false, group: "settings", listed: true },
+  allergies: { id: "allergies", path: "/ustawienia/alergie", stage: 2, available: true, group: "settings", listed: true },
   budget: { id: "budget", path: "/ustawienia/budzet", stage: 4, available: false, group: "settings", listed: true },
   stores: { id: "stores", path: "/ustawienia/sklepy", stage: 4, available: false, group: "settings", listed: true },
   generator: { id: "generator", path: "/generator", stage: 5, available: false, group: "planning", listed: true },
@@ -58,7 +58,7 @@ export const SCREENS: Record<ScreenId, ScreenDefinition> = {
   history: { id: "history", path: "/historia", stage: 7, available: false, group: "planning", listed: true },
 };
 
-export const MAIN_NAV: ScreenId[] = ["onboarding", "generator", "week", "shopping"];
+export const MAIN_NAV: ("onboarding" | "nutritionSettings" | "allergies" | "generator" | "shopping")[] = ["onboarding", "nutritionSettings", "allergies", "generator", "shopping"];
 
 export function listedScreens(): ScreenDefinition[] {
   return Object.values(SCREENS).filter((screen) => screen.listed);

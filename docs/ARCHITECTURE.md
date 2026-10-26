@@ -34,7 +34,10 @@ src/
   features/
     nutrition/            # CZYSTA logika: BMR, TDEE, cel kcal, makro, zasady bezpieczeństwa
     profile/              # schemat Zod, evaluateProfile, akcja serwera, komponenty formularza
-    preferences/ allergens/ products/ recipes/ pricing/ promotions/
+    allergens/            # CZYSTA logika: 14 alergenów UE, rodzaje wykluczeń, assessAllergens()
+    preferences/          # reguły diet (diet-styles.ts), resolveFoodRules(), schematy Zod,
+                          # evaluateDietSettings / evaluateRestrictions, akcje, formularze
+    products/ recipes/ pricing/ promotions/
     meal-planning/ shopping/ auth/   # planowane moduły (README z zakresem)
   i18n/
     config.ts             # obsługiwane locale (pl-PL)
@@ -72,6 +75,20 @@ supabase/migrations/      # wersjonowane migracje SQL (od etapu 3/7)
                   ├─ getRestrictionReasons → { kind: "restricted" }
                   ├─ getGoalBlockReason    → { kind: "goal_blocked" }
                   └─ BMR → TDEE → calculateGoalCalories → calculateMacros → { kind: "ok" }
+```
+
+## Przepływ: preferencje i alergie
+
+```
+<DietSettingsForm> / <RestrictionsForm> (client)
+   ├─ useSettingsForm: useActionState + wersja robocza własna (wypełnia pola)
+   │                    + wersja robocza drugiego ekranu (hidden input)
+   └─ saveDietSettingsAction / saveRestrictionsAction (server action)
+        └─ evaluateDietSettings / evaluateRestrictions
+             ├─ dietSettingsSchema / restrictionsSchema   (Zod, komunikaty PL)
+             ├─ parseDraft(drugi ekran)                     (ta sama walidacja; błędna → pominięta)
+             └─ resolveFoodRules                            → status success | conflict
+   └─ po success: zapis surowych wartości do sessionStorage (tylko ta karta)
 ```
 
 ## Ekrany i nawigacja

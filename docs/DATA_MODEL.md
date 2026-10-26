@@ -1,6 +1,6 @@
 # Model danych
 
-> **Stan obecny (etap 2): aplikacja nie korzysta z bazy danych.** Brak migracji w
+> **Stan obecny (koniec etapu 2): aplikacja nie korzysta z bazy danych.** Brak migracji w
 > `supabase/migrations/`. Poniżej docelowy schemat PostgreSQL (Supabase) — zostanie wprowadzony
 > migracjami w etapach 3, 4, 5, 6 i 7. Typy domenowe w kodzie (`src/features/*/types.ts`) są
 > zgodne z nazwami kolumn (camelCase ↔ snake_case).
@@ -16,6 +16,23 @@
 | `Goal` | `lose_weight`, `maintain`, `gain_weight`, `build_muscle` |
 | `HealthFlag` | `pregnancy`, `breastfeeding`, `diabetes`, `kidney_disease`, `cardiovascular_disease`, `eating_disorder`, `other_condition` |
 | `NutritionResult` | `restricted` / `goal_blocked` / `ok` (BMR, TDEE, cel kcal, makro, ostrzeżenia) |
+
+`src/features/allergens/eu-allergens.ts` i `src/features/preferences/diet-styles.ts`:
+
+| Typ | Wartości |
+| --- | --- |
+| `AllergenCode` | 14 kodów UE (jak w tabeli `allergens` poniżej) |
+| `AllergenReaction` | `none`, `allergy`, `intolerance` |
+| `ExclusionKind` | `allergy`, `intolerance`, `voluntary`, `dislike` |
+| `AllergenExclusion` | `{ code, kind: allergy \| intolerance, excludeTraces }` |
+| `DietStyle` | `traditional`, `vegetarian`, `vegan`, `meatless`, `with_fish`, `no_fish`, `with_meat` |
+| `FoodGroup` | `meat`, `fish`, `seafood`, `eggs`, `dairy`, `honey` |
+| `KitchenEquipment` | `stove`, `oven`, `microwave`, `blender`, `air_fryer`, `slow_cooker` |
+| `Difficulty` | `easy`, `medium`, `any` |
+| `FoodRules` | wynik silnika reguł: wykluczone/wymagane grupy, alergeny, własne wykluczenia, preferowane, konflikty |
+
+Produkty w katalogu (etap 3) dostaną `food_groups text[]` (wartości `FoodGroup`), aby reguły
+diet mogły je filtrować.
 
 ## Zasady ogólne
 
@@ -41,12 +58,15 @@
 **`profile_health_flags`** — dane szczególnej kategorii, osobna tabela, osobna polityka
 `user_id`, `flag text check in (…HealthFlag)`, PK (`user_id`, `flag`).
 
-**`user_preferences`** — `user_id`, `diet_style text[]` (np. `vegetarian`, `fish_ok`),
-`max_ingredients smallint`, `difficulty text`, `use_leftovers boolean`, `kitchen_equipment text[]`.
+**`user_preferences`** — `user_id` PK, `diet_styles text[] not null` (wartości `DietStyle`,
+min. 1), `max_ingredients smallint null check 3–20`, `max_prep_minutes smallint null`,
+`difficulty text check in (easy, medium, any)`, `use_leftovers boolean`, `kitchen_equipment text[]`.
+Preferowane produkty: `user_preferred_products` (`user_id`, `product_id null`, `custom_label null`).
 
 **`user_exclusions`** — rozróżnia rodzaj wykluczenia
 `id`, `user_id`, `kind text check in (allergy, intolerance, dislike, voluntary)`,
 `allergen_code text null references allergens(code)`, `product_id uuid null references products`,
+`exclude_traces boolean not null default false` (tylko dla `allergy`),
 `custom_label text null`, `check (allergen_code is not null or product_id is not null or custom_label is not null)`.
 
 **`user_stores`** — `user_id`, `store_id` FK, PK złożony.

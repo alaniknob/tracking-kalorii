@@ -1,7 +1,7 @@
 # tracking-kalorii
 
 Aplikacja webowa (PL) do szacowania zapotrzebowania kalorycznego, planowania jadłospisów
-i optymalizacji kosztów zakupów. Stan: **etap 1 (fundament) + etap 2a (profil i kalkulator)**.
+i optymalizacji kosztów zakupów. Stan: **etap 1 (fundament) + etap 2 (profil, kalkulator, preferencje, alergie)**.
 
 ## Uruchomienie
 

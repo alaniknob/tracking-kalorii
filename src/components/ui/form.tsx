@@ -24,6 +24,26 @@ export function Select({ className, invalid, ...props }: ComponentProps<"select"
   );
 }
 
+export function Textarea({ className, invalid, ...props }: ComponentProps<"textarea"> & { invalid?: boolean }) {
+  return (
+    <textarea
+      aria-invalid={invalid || undefined}
+      className={cn(control, "h-auto min-h-20 py-2.5", invalid ? "border-danger" : "border-border-strong", className)}
+      {...props}
+    />
+  );
+}
+
+/** Pole wyboru z etykietą po prawej. */
+export function CheckboxLabel({ children, ...props }: Omit<ComponentProps<"input">, "type"> & { children: ReactNode }) {
+  return (
+    <label className="flex items-start gap-2.5 text-sm text-foreground">
+      <Checkbox className="mt-0.5" {...props} />
+      <span>{children}</span>
+    </label>
+  );
+}
+
 export function Checkbox({ className, ...props }: Omit<ComponentProps<"input">, "type">) {
   return <input type="checkbox" className={cn("size-4 rounded accent-primary", className)} {...props} />;
 }

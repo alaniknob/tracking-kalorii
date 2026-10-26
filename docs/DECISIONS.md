@@ -82,3 +82,34 @@ razem z pierwszym realnym użyciem.
 Vitest dla logiki domenowej i walidacji (środowisko `node`), Playwright na buildzie
 produkcyjnym w dwóch profilach (Desktop Chrome, Pixel 7). E2E sprawdza m.in., że żaden link
 z listy ekranów nie prowadzi do 404.
+
+## D13. Sposoby żywienia jako reguły na grupach żywności
+
+Każdy sposób żywienia to `{ forbids, requires }` na grupach (`meat`, `fish`, `seafood`, `eggs`,
+`dairy`, `honey`) — `DIET_STYLE_RULES` w `features/preferences/diet-styles.ts`. Opcje można
+łączyć; wynik to suma wykluczeń. Nowy sposób żywienia = nowy wpis + tekst. „Tradycyjna” nie
+nakłada ograniczeń. „Bezmięsna” wyklucza tylko mięso (ryby dozwolone) — dzięki temu
+pescowegetarianizm to „Bezmięsna + Z rybami”, a „Wegetariańska + Z rybami” jest sprzecznością.
+
+## D14. Konflikty: blokujące vs rozstrzygnięte
+
+Sprzeczność wyłącznie w wyborach użytkownika (dieta vs dieta, lubię vs nie lubię) blokuje
+przyjęcie ustawień — nie zgadujemy intencji. Konflikt z alergią/nietolerancją/wykluczeniem
+rozstrzygamy automatycznie na korzyść ograniczenia (bezpieczeństwo > smak) i informujemy.
+Reguły nigdy nie są łagodzone.
+
+## D15. Alergia vs nietolerancja vs wykluczenie
+
+Alergia może wykluczać także „może zawierać” (opcja, domyślnie włączona), nietolerancja
+wyklucza tylko produkty zawierające składnik, a ślady oznacza „wymaga weryfikacji”. Własne
+wpisy są przechowywane z rodzajem (`allergy`, `intolerance`, `voluntary`, `dislike`). Ocena
+produktu nigdy nie zwraca „bezpieczny” — najwyżej `no_declared_conflict`.
+
+## D16. Tymczasowe przechowywanie preferencji w sessionStorage
+
+Bez kont nie zapisujemy danych na serwerze (dane o alergiach to dane o zdrowiu). Aby wykrywać
+konflikty między dwoma ekranami, przeglądarka trzyma surowe wartości formularzy w
+`sessionStorage` (tylko bieżąca karta) i dołącza wersję roboczą drugiego ekranu do zapisu;
+serwer waliduje ją tym samym schematem Zod co formularz, a niepoprawną pomija. W etapie 7
+zostanie to zastąpione zapisem w Supabase (tabele `user_preferences`, `user_exclusions`).
+Dopasowanie produktów tekstowych: normalizacja (NFC, małe litery `pl-PL`, spacje).
