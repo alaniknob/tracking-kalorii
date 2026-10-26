@@ -17,7 +17,7 @@ Aplikacja webowa dla rynku polskiego do:
 Interfejs w całości po polsku (komunikaty, daty, kwoty w PLN), architektura gotowa na i18n.
 Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 
-## Stan na koniec etapu 3 (bieżący)
+## Stan na koniec etapu 4 (bieżący)
 
 ### Działa
 
@@ -29,6 +29,10 @@ Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 | Alergie i wykluczenia | `/ustawienia/alergie` | 14 alergenów UE (alergia / nietolerancja), ślady, własne wykluczenia |
 | Przepisy (lista + szczegóły) | `/przepisy`, `/przepisy/[id]` | Dane demo; kcal i makro ze składników; ocena zgodności z ustawieniami |
 | Produkty | `/produkty` | Dane demo; wartości na 100 g/ml, alergeny, kompletność, źródło |
+| Ceny i promocje + import CSV | `/ceny` | Ceny demo (oznaczone) + własny plik CSV; ceny jednostkowe, statusy |
+| Wybór sklepów | `/ustawienia/sklepy` | 9 sieci + do 10 własnych sklepów |
+| Budżet i sprawdzenie koszyka | `/ustawienia/budzet` | Budżet tygodniowy, koszt wybranych przepisów, diagnoza |
+| Koszt przepisu | `/przepisy/[id]` | Koszt zużytych składników vs koszt opakowań |
 | Ekrany zastępcze (oznaczone „Niedostępne · Etap N”) | pozostałe | Brak martwych przycisków |
 | Strony błędów po polsku | 404, błąd | Bez stack trace'ów |
 
@@ -132,6 +136,58 @@ Bez zapisanych ustawień przepisy nie mają oceny (komunikat z linkiem do ustawi
 z RLS — publiczny odczyt, zapis tylko `service_role`. Aplikacja na razie czyta dane z kodu
 przez interfejs `ProductCatalogProvider`; podłączenie Supabase — etap 7.
 
+### Sklepy, ceny, promocje i budżet (etap 4)
+
+**Sklepy:** lista sieci (Lidl, Biedronka, Kaufland, Aldi, Carrefour, Auchan, Dino, Netto,
+Stokrotka) w `src/features/stores/stores.ts` + do 10 własnych sklepów (nazwa 2–40 znaków, bez
+duplikatów). Wymagany co najmniej jeden sklep. Bez zapisanego wyboru wyceny używają wszystkich
+sieci (komunikat z linkiem do wyboru). Nazwa sieci nie oznacza integracji — **nie pobieramy
+danych ze sklepów** (brak API, brak scrapingu).
+
+**Ceny przykładowe:** 45 cen i 3 promocje demo (`src/features/pricing/demo-prices.ts`) z
+plakietką „Ceny przykładowe” i banerem — nie są aktualnymi cenami sklepów. Część celowo
+nieaktualna lub szacunkowa, jedna promocja wygasła, jedna z warunkami, a przyprawa curry nie
+ma ceny — żeby było widać każdy stan.
+
+**Import CSV** (`/ceny`, szablon `/szablon-cen.csv`): kolumny wymagane `produkt`, `sklep`,
+`cena`, `opakowanie`, `jednostka`, `data`, `zrodlo`; opcjonalne `szacunkowa`, `promocja_od`,
+`promocja_do`, `warunki`, `waluta`, `url`. Separator `;`, `,` lub tabulator, UTF-8 (z BOM lub
+bez), cudzysłowy RFC 4180, nagłówki bez względu na wielkość liter i polskie znaki. Limity:
+200 KB, 2000 wierszy. Każdy wiersz jest walidowany na serwerze: znany produkt (id lub nazwa)
+i sklep z listy, waluta PLN, cena 0,01–10 000 zł („3,49”, „3.49”, „3,49 zł”), opakowanie > 0,
+jednostka g/kg/ml/l/szt zgodna z produktem (szt wymaga masy sztuki), data ISO lub DD.MM.RRRR
+nie z przyszłości i nie starsza niż 2 lata, obie daty promocji i ich kolejność, zakaz
+szacunkowych promocji, warunki tylko przy promocji, adres http(s), duplikaty. Błędne wiersze
+są pomijane, a raport podaje wiersz, kolumnę i opis (do 100 błędów). Plik **nie jest
+zapisywany na serwerze** — trafia tylko do karty przeglądarki i jest ponownie walidowany przy
+każdym użyciu.
+
+**Statusy:** cena **aktualna** do 14 dni od daty pozyskania, potem **nieaktualna**;
+**szacunkowa** zawsze oznaczona osobno. Promocja **aktywna**, **nadchodząca** lub **wygasła**
+(wygasła nie jest wliczana, ale jest pokazywana); promocja **z warunkami** nie jest wliczana
+automatycznie. Status liczony w chwili odczytu (strefa Europe/Warsaw). Brak ceny → „Brak ceny”
+z przyczyną (brak w wybranych sklepach, tylko szacunkowe przy wyłączonych szacunkach, nieznany
+produkt) — nigdy 0 zł.
+
+**Ceny jednostkowe:** za 1 kg lub 1 l (w jednostce bazowej produktu), przy opakowaniach na
+sztuki dodatkowo za 1 szt. Cena opakowania i cena jednostkowa są zawsze podpisane osobno.
+
+**Koszt:** wspólne produkty z kilku przepisów są sumowane i kupowane w całych opakowaniach.
+Dla każdego produktu wybierana jest oferta wg statusu (aktualna > nieaktualna > szacunkowa —
+tańsza szacunkowa nigdy nie wygrywa z potwierdzoną), potem najniższego kosztu opakowań, potem
+najmniejszej resztki. Wynik: **koszt zużytych składników** i **koszt koniecznych opakowań**,
+każdy rozbity na ceny aktualne / nieaktualne / szacunkowe — **nigdy nie sumujemy potwierdzonych
+z szacunkowymi**. Pokazujemy też tańszą ofertę w sklepie spoza wybranych.
+
+**Budżet** (`/ustawienia/budzet`): kwota tygodniowa 20–5000 zł, zgoda na ceny szacunkowe.
+Sprawdzenie koszyka: liczba przygotowań każdego przepisu (0–14) → koszt opakowań porównany
+z budżetem. Wynik: mieści się / mieści się tylko z cenami szacunkowymi / niepełne dane (brak
+cen) / budżet za niski — z potrzebną kwotą (dolna granica), brakującą kwotą, najdroższymi
+pozycjami i propozycjami: inny sklep, tańszy zamiennik (ta sama kategoria, ≥ 10% taniej
+za kg/l, **tylko zgodny z alergiami i dietą** — `evaluateProductFit`), mniej resztek, brakujące
+ceny, zgoda na szacunki, zmiana przepisów. Przepisy wykluczone przez ustawienia są pomijane
+z komunikatem.
+
 ### Ograniczenia obecnej wersji
 
 - Brak kont i trwałego zapisu (wymaga Supabase — etap 7); preferencje tylko w karcie przeglądarki.
@@ -143,7 +199,13 @@ przez interfejs `ProductCatalogProvider`; podłączenie Supabase — etap 7.
   generatora (etap 5), który będzie dopasowywał je do produktów z kategoriami.
 - Dopasowanie własnych wykluczeń (wolny tekst) do produktów jest heurystyczne (fragment nazwy
   lub składu) — dlatego przy nieznanym składzie wynik to „wymaga weryfikacji”.
-- Budżet i sklepy — ekrany oznaczone jako niedostępne. Brak cen, generatora i listy zakupów.
+- Ceny to wyłącznie dane przykładowe lub import użytkownika; brak dostawcy prawdziwych cen
+  (interfejs `StorePriceProvider` jest gotowy). Import, sklepy i budżet tylko w karcie
+  przeglądarki do etapu 7.
+- Jeden rozmiar opakowania na produkt w koszyku (bez łączenia np. 500 g + 1 kg); wybór sklepu
+  per produkt — bez kosztu dojazdu i minimalnej liczby sklepów.
+- Sprawdzenie koszyka to ręczny wybór przepisów; automatyczny plan w ramach budżetu — generator
+  (etap 5). Brak zapasów użytkownika i listy zakupów (etap 6).
 
 ## Zakres docelowy (planowany)
 

@@ -19,6 +19,7 @@ export type ScreenId =
   | "shopping"
   | "recipes"
   | "products"
+  | "prices"
   | "profileSettings"
   | "history";
 
@@ -50,14 +51,15 @@ export const SCREENS: Record<ScreenId, ScreenDefinition> = {
     listed: true,
   },
   allergies: { id: "allergies", path: "/ustawienia/alergie", stage: 2, available: true, group: "settings", listed: true },
-  budget: { id: "budget", path: "/ustawienia/budzet", stage: 4, available: false, group: "settings", listed: true },
-  stores: { id: "stores", path: "/ustawienia/sklepy", stage: 4, available: false, group: "settings", listed: true },
+  budget: { id: "budget", path: "/ustawienia/budzet", stage: 4, available: true, group: "settings", listed: true },
+  stores: { id: "stores", path: "/ustawienia/sklepy", stage: 4, available: true, group: "settings", listed: true },
   generator: { id: "generator", path: "/generator", stage: 5, available: false, group: "planning", listed: true },
   week: { id: "week", path: "/plan", stage: 5, available: false, group: "planning", listed: true },
   meal: { id: "meal", path: "/plan/posilki", stage: 5, available: false, group: "planning", listed: false },
   shopping: { id: "shopping", path: "/zakupy", stage: 6, available: false, group: "planning", listed: true },
   recipes: { id: "recipes", path: "/przepisy", stage: 3, available: true, group: "catalog", listed: true },
   products: { id: "products", path: "/produkty", stage: 3, available: true, group: "catalog", listed: true },
+  prices: { id: "prices", path: "/ceny", stage: 4, available: true, group: "catalog", listed: true },
   profileSettings: { id: "profileSettings", path: "/profil", stage: 7, available: false, group: "account", listed: true },
   history: { id: "history", path: "/historia", stage: 7, available: false, group: "planning", listed: true },
 };

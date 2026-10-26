@@ -9,7 +9,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | 1 | Fundament | ✅ zrobione |
 | 2 | Profil, kalkulator, preferencje, alergie | ✅ zrobione |
 | 3 | Produkty, przepisy, alergeny | ✅ zrobione |
-| 4 | Budżet, sklepy, ceny, promocje | ⏳ |
+| 4 | Budżet, sklepy, ceny, promocje | ✅ zrobione |
 | 5 | Generator jadłospisu | ⏳ |
 | 6 | Lista zakupów | ⏳ |
 | 7 | Konta i trwałość (Supabase) | ⏳ |
@@ -54,12 +54,22 @@ walidacja Zod na serwerze, tymczasowe przechowywanie w `sessionStorage`, testy j
 Przeniesione: konflikty preferowanych produktów (wolny tekst) z dietą → etap 5 (dopasowanie
 do katalogu w generatorze).
 
-## 4. Budżet i sklepy
+## 4. Budżet i sklepy — zrobione
 
-Interfejsy `ProductCatalogProvider`, `StorePriceProvider`, `PromotionProvider`,
-`NutritionDataProvider`; import CSV cen; ceny jednostkowe; statusy aktualności (aktualna,
-przestarzała, wygasła promocja, brak ceny, szacunkowa); ekrany budżetu i wyboru sklepów.
-Żadnego scrapingu bez zgody źródła.
+- Konfigurowalna lista sklepów (9 sieci + do 10 własnych), ekran `/ustawienia/sklepy`.
+- `StorePriceProvider` / `PromotionProvider` (w pamięci: ceny demo + import użytkownika).
+- Import CSV (`/ceny`): parser RFC 4180 (`;` `,` tab, BOM, cudzysłowy), walidacja każdego
+  wiersza na serwerze, raport błędów z numerem wiersza i kolumną, szablon `/szablon-cen.csv`.
+- Kwoty w groszach; ceny jednostkowe (za 1 kg / 1 l, dodatkowo za sztukę); koszt zużytych
+  składników vs koszt koniecznych opakowań; statusy: aktualna, nieaktualna, szacunkowa,
+  promocja aktywna / wygasła / nadchodząca / z warunkami, brak ceny.
+- Ceny potwierdzone i szacunkowe nigdy niesumowane razem.
+- Koszt przepisu na `/przepisy/[id]`; budżet tygodniowy i sprawdzenie koszyka z diagnozą
+  (`/ustawienia/budzet`): potrzebny budżet, brakująca kwota, najdroższe pozycje, propozycje.
+- Migracja `stores`, `store_prices`, `promotions` z RLS + testy SQL; seed z cenami demo.
+
+Przeniesione: `NutritionDataProvider` → etap 7 (wraz z prawdziwym źródłem danych); zapis cen
+z importu w bazie (osobna tabela z `user_id`) → etap 7. Żadnego scrapingu bez zgody źródła.
 
 ## 5. Generator jadłospisu
 

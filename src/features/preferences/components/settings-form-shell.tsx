@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { getMessages } from "@/i18n";
 import type { SettingsFormState } from "../evaluate";
 import { RulesSummary } from "./rules-summary";
-import { clearAllDrafts } from "./use-session-draft";
+import { clearAllDrafts } from "@/lib/session-draft";
 
 /** Wspólny układ formularzy ustawień: komunikaty stanu, przycisk, podsumowanie reguł. */
 export function SettingsFormShell<V, F extends string>({

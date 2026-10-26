@@ -1,5 +1,5 @@
-import type { z } from "zod";
 import { getMessages } from "@/i18n";
+import { fieldErrorsOf, parseDraft } from "@/lib/draft";
 import { resolveFoodRules, type FoodRules } from "./rules";
 import {
   dietDraftSchema,
@@ -21,28 +21,6 @@ export type SettingsFormState<Values, Field extends string> =
 
 export type DietFormState = SettingsFormState<DietFormValues, DietField>;
 export type RestrictionsFormState = SettingsFormState<RestrictionsFormValues, RestrictionsField>;
-
-function fieldErrorsOf<Field extends string>(error: z.ZodError): Partial<Record<Field, string>> {
-  const fieldErrors: Partial<Record<Field, string>> = {};
-  for (const issue of error.issues) {
-    const field = issue.path[0] as Field | undefined;
-    if (field && !fieldErrors[field]) fieldErrors[field] = issue.message;
-  }
-  return fieldErrors;
-}
-
-/** Wersja robocza z drugiego ekranu; niepoprawna lub zmanipulowana jest pomijana. */
-function parseDraft<T>(json: string, rawSchema: z.ZodType, schema: z.ZodType<T>): T | null {
-  if (json.trim() === "") return null;
-  try {
-    const raw = rawSchema.safeParse(JSON.parse(json));
-    if (!raw.success) return null;
-    const parsed = schema.safeParse(raw.data);
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
-}
 
 function toState<Values>(values: Values, rules: FoodRules, usedOtherDraft: boolean) {
   return { status: rules.hasBlockingConflict ? ("conflict" as const) : ("success" as const), values, rules, usedOtherDraft };

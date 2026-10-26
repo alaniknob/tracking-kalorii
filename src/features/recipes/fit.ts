@@ -9,10 +9,11 @@ import { FOOD_GROUPS, type FoodGroup } from "@/features/preferences/diet-styles"
 import type { FoodRules } from "@/features/preferences/rules";
 import { normalizeLabel } from "@/lib/text-list";
 import type { ProductIndex } from "./nutrition";
+import type { Product } from "@/features/products/types";
 import type { Recipe } from "./types";
 
 /** Alergeny przepisu = suma alergenów składników („zawiera” ma pierwszeństwo przed „może zawierać”). */
-export function aggregateRecipeAllergens(recipe: Recipe, products: ProductIndex): AllergenInfo {
+export function aggregateRecipeAllergens(recipe: Pick<Recipe, "ingredients">, products: ProductIndex): AllergenInfo {
   const declared: Partial<Record<AllergenCode, AllergenDeclaration>> = {};
   let ingredientsKnown = true;
   for (const ingredient of recipe.ingredients) {
@@ -29,7 +30,7 @@ export function aggregateRecipeAllergens(recipe: Recipe, products: ProductIndex)
   return { ingredientsKnown, declared };
 }
 
-export function recipeFoodGroups(recipe: Recipe, products: ProductIndex): FoodGroup[] {
+export function recipeFoodGroups(recipe: Pick<Recipe, "ingredients">, products: ProductIndex): FoodGroup[] {
   const groups = new Set<FoodGroup>();
   for (const ingredient of recipe.ingredients) {
     for (const group of products.get(ingredient.productId)?.foodGroups ?? []) groups.add(group);
@@ -59,7 +60,7 @@ export interface RecipeFit {
  * Ocena przepisu względem reguł użytkownika. Kolejność: wykluczenia (alergeny, grupy, własne)
  * → brak danych do potwierdzenia → brak konfliktu. Żadna preferencja nie łagodzi wykluczenia.
  */
-export function evaluateRecipeFit(recipe: Recipe, products: ProductIndex, rules: FoodRules): RecipeFit {
+export function evaluateRecipeFit(recipe: Pick<Recipe, "ingredients">, products: ProductIndex, rules: FoodRules): RecipeFit {
   const excluded: RecipeFitReason[] = [];
   const verify: RecipeFitReason[] = [];
 
@@ -105,4 +106,10 @@ export function evaluateRecipeFit(recipe: Recipe, products: ProductIndex, rules:
   if (excluded.length > 0) return { status: "excluded", reasons: excluded };
   if (verify.length > 0) return { status: "needs_verification", reasons: verify };
   return { status: "no_conflict_found", reasons: [] };
+}
+
+/** Zgodność pojedynczego produktu z regułami — te same zasady co dla przepisu z jednym składnikiem. */
+export function evaluateProductFit(product: Product, rules: FoodRules): RecipeFit {
+  const ingredients = [{ productId: product.id, amount: 100, unit: product.baseUnit, note: null }];
+  return evaluateRecipeFit({ ingredients }, new Map([[product.id, product]]), rules);
 }

@@ -129,19 +129,39 @@ w przepisie), `amount numeric(10,3) > 0` w stanie **surowym**, `unit check in (g
 **Dane:** `supabase/seed.sql` (generowany z `demo-products.ts` / `demo-recipes.ts`, wszystkie
 rekordy `is_demo = true`). Testy SQL: `supabase/tests/catalog.test.sql`.
 
-### Katalog publiczny (etap 4 — planowane)
+### Ceny i sklepy (etap 4 — zaimplementowane w migracji `20261026150000_pricing.sql`)
 
-**`stores`** — `id`, `name` (Lidl, Biedronka, Kaufland, Aldi, Carrefour, Auchan, …), `chain`,
-`is_active`. Lista konfigurowalna.
+**`stores`** — `id text` PK (`^[a-z0-9-]+$`, np. `lidl`), `name` (2–60 znaków),
+`kind check in (chain, other)` (domyślnie `chain`), `sort_order smallint unique`,
+`is_active boolean default true`. Migracja wstawia 9 sieci (Lidl, Biedronka, Kaufland, Aldi,
+Carrefour, Auchan, Dino, Netto, Stokrotka) — zgodność z `src/features/stores/stores.ts`
+pilnuje test Vitest. Własne sklepy użytkownika (`inny-<slug>`) są na razie tylko w karcie
+przeglądarki; w bazie — etap 7.
 
-**`store_prices`** — oddzielone od wartości odżywczych
-`id`, `product_id`, `store_id`, `price numeric(10,2)`, `currency`, `package_size`, `unit`,
-`observed_at timestamptz`, `source text`, `source_kind text check in (import_csv, manual,
-provider, estimate)`, `is_estimate boolean`, `valid_until null`. Indeks
-(`product_id`, `store_id`, `observed_at desc`). Aktualność liczona przy odczycie.
+**`store_prices`** — oddzielone od wartości odżywczych. `id uuid` PK, `product_id` FK
+(cascade), `store_id` FK (`on delete restrict`), `price numeric(10,2)` (> 0, ≤ 10 000),
+`currency char(3) default 'PLN' check (= 'PLN')`, `package_amount numeric(10,3) > 0`,
+`package_unit check in (g, kg, ml, l, szt)`, `observed_on date` (data pozyskania ceny),
+`is_estimate boolean default false`, `source_kind check in (demo, csv_import, manual,
+provider)`, `source_name` (≥ 2 znaki), `source_url null` (`^https?://`), `is_demo`,
+`created_at`. `check (is_demo = (source_kind = 'demo'))`; unikalna obserwacja
+(`product_id`, `store_id`, `package_amount`, `package_unit`, `observed_on`, `is_estimate`).
+Indeksy (`product_id`, `store_id`, `observed_on desc`) i (`store_id`). **Status aktualności
+nie jest kolumną** — liczy go `priceStatus()` przy odczycie (aktualna ≤ 14 dni, potem
+nieaktualna; szacunkowa zawsze szacunkowa).
 
-**`promotions`** — `id`, `product_id`, `store_id`, `promo_price`, `starts_on`, `ends_on`,
-`conditions text null`, `source`, `check (ends_on >= starts_on)`.
+**`promotions`** — `id uuid` PK, `product_id`, `store_id`, `promo_price numeric(10,2)`
+(> 0, ≤ 10 000), `currency` (PLN), `package_amount`, `package_unit`, `starts_on`, `ends_on`
+(`check (ends_on >= starts_on)`), `conditions text null` (2–200 znaków; promocje z warunkami
+nie są wliczane automatycznie), `source_kind`, `source_name`, `source_url`, `is_demo`
+(jak wyżej), `created_at`. **Brak kolumny `is_estimate`** — promocja jest zawsze
+potwierdzona. Indeks (`product_id`, `store_id`, `ends_on desc`). Status (aktywna /
+nadchodząca / wygasła) liczony przy odczycie.
+
+W kodzie kwoty są liczbami całkowitymi w **groszach**; `numeric(10,2)` tylko w bazie.
+Ceny z importu CSV użytkownika nie trafiają do katalogu publicznego — w etapie 7 osobna tabela
+z `user_id` i RLS właściciela. Seed zawiera 45 cen i 3 promocje demo (`is_demo = true`).
+Testy SQL: `supabase/tests/pricing.test.sql`.
 
 ### Plany i zakupy (etap 5–6)
 
@@ -165,6 +185,9 @@ provider, estimate)`, `is_estimate boolean`, `valid_until null`. Indeks
 `<tabela>_public_read` (`for select to anon, authenticated using (true)`), `revoke insert,
 update, delete, truncate` od `anon` i `authenticated`. Zapis wyłącznie przez `service_role`
 (omija RLS). Sprawdzone testem `supabase/tests/catalog.test.sql` na PostgreSQL 16.
+
+**Zaimplementowane (etap 4)** dla `stores`, `store_prices`, `promotions` — te same zasady
+(publiczny odczyt, zapis tylko `service_role`), test `supabase/tests/pricing.test.sql`.
 
 **Docelowo (etapy 4–7):**
 

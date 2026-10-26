@@ -1,4 +1,5 @@
 import type { AllergenCode } from "@/features/allergens";
+import type { Promotion, StorePrice } from "@/features/pricing/types";
 import type { Recipe } from "@/features/recipes/types";
 import type { Product } from "./types";
 
@@ -10,11 +11,17 @@ const arr = (values: readonly string[]): string => `array[${values.map(q).join("
  * Generuje `supabase/seed.sql` z danych demo w kodzie — jedno źródło danych przykładowych.
  * Każdy rekord ma `is_demo = true`. Aktualizacja: `npm run db:seed:generate`.
  */
-export function buildDemoSeedSql(products: readonly Product[], recipes: readonly Recipe[]): string {
+export function buildDemoSeedSql(
+  products: readonly Product[],
+  recipes: readonly Recipe[],
+  prices: readonly StorePrice[] = [],
+  promotions: readonly Promotion[] = [],
+): string {
   const lines: string[] = [
-    "-- WYGENEROWANE z src/features/{products,recipes}/demo-*.ts — nie edytuj ręcznie.",
+    "-- WYGENEROWANE z src/features/{products,recipes,pricing}/demo-*.ts — nie edytuj ręcznie.",
     "-- Aktualizacja: npm run db:seed:generate",
     "-- DANE PRZYKŁADOWE (DEMO): przybliżone wartości typowe, nie z etykiet konkretnych produktów.",
+    "-- CENY PRZYKŁADOWE (DEMO): wymyślone do demonstracji obliczeń, nie są cenami ani promocjami sklepów.",
     "",
     "begin;",
     "",
@@ -87,6 +94,53 @@ export function buildDemoSeedSql(products: readonly Product[], recipes: readonly
           `${position}, ${i.amount}, ${q(i.unit)}, ${q(i.note)});`,
       );
     });
+  }
+
+  const slug = (productId: string) => `(select id from public.products where slug = ${q(productId)})`;
+  const money = (grosze: number) => (grosze / 100).toFixed(2);
+  if (prices.length || promotions.length) lines.push("");
+  for (const p of prices) {
+    lines.push(
+      "insert into public.store_prices (product_id, store_id, price, currency, package_amount, package_unit, observed_on, " +
+        "is_estimate, source_kind, source_name, source_url, is_demo) values (" +
+        [
+          slug(p.productId),
+          q(p.storeId),
+          money(p.priceGrosze),
+          q(p.currency),
+          n(p.packageAmount),
+          q(p.packageUnit),
+          q(p.observedOn),
+          String(p.isEstimate),
+          q(p.source.kind),
+          q(p.source.name),
+          q(p.source.url),
+          String(p.source.isDemo),
+        ].join(", ") +
+        ");",
+    );
+  }
+  for (const p of promotions) {
+    lines.push(
+      "insert into public.promotions (product_id, store_id, promo_price, currency, package_amount, package_unit, starts_on, " +
+        "ends_on, conditions, source_kind, source_name, source_url, is_demo) values (" +
+        [
+          slug(p.productId),
+          q(p.storeId),
+          money(p.promoPriceGrosze),
+          q(p.currency),
+          n(p.packageAmount),
+          q(p.packageUnit),
+          q(p.startsOn),
+          q(p.endsOn),
+          q(p.conditions),
+          q(p.source.kind),
+          q(p.source.name),
+          q(p.source.url),
+          String(p.source.isDemo),
+        ].join(", ") +
+        ");",
+    );
   }
 
   lines.push("", "commit;", "");

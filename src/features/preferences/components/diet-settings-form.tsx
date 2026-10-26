@@ -7,7 +7,7 @@ import { saveDietSettingsAction } from "../actions";
 import { DIET_STYLES, DIFFICULTY_LEVELS, KITCHEN_EQUIPMENT, PREP_TIME_OPTIONS } from "../diet-styles";
 import { DEFAULT_DIET_FORM_VALUES, dietDraftSchema, type DietField } from "../schema";
 import { SettingsFormShell } from "./settings-form-shell";
-import { DRAFT_KEYS } from "./use-session-draft";
+import { DRAFT_KEYS } from "@/lib/session-draft";
 import { useSettingsForm } from "./use-settings-form";
 
 export function DietSettingsForm() {

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { AllergenList } from "@/features/products/components/allergen-list";
 import { toGrams } from "@/features/products/quantity";
 import { catalog, recipeProductIds } from "@/features/recipes/catalog";
+import { RecipeCost } from "@/features/pricing/components/recipe-cost";
 import { NutritionTable } from "@/features/recipes/components/nutrition-table";
 import { RecipeFitDetails, RecipeFitProvider } from "@/features/recipes/components/recipe-fit";
 import { aggregateRecipeAllergens, recipeFoodGroups } from "@/features/recipes/fit";
@@ -68,7 +69,7 @@ export default async function RecipePage({ params }: { params: Params }) {
       />
       <RecipeFitProvider recipeIds={[recipe.id]}>
         <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <RecipeFitDetails recipeId={recipe.id} />
 
             <Card className="space-y-4">
@@ -101,6 +102,8 @@ export default async function RecipePage({ params }: { params: Params }) {
               ) : null}
             </Card>
 
+            <RecipeCost recipeId={recipe.id} />
+
             <Card>
               <h2 className="mb-3 text-sm font-semibold">{r.instructions}</h2>
               <ol className="list-decimal space-y-2 pl-5 text-sm leading-relaxed">
@@ -111,7 +114,7 @@ export default async function RecipePage({ params }: { params: Params }) {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <Card>
               <h2 className="mb-3 text-sm font-semibold">{r.ingredients}</h2>
               <ul className="divide-y divide-border text-sm">

@@ -41,13 +41,21 @@ src/
                           # dane demo, ProductCatalogProvider, generator seed.sql
     recipes/              # calculateRecipeNutrition, evaluateRecipeFit, dane demo, katalog,
                           # akcja oceny zgodności, komponenty (tabela wartości, plakietki)
-    pricing/ promotions/
+                          # recipeNeeds (cost.ts) — zapotrzebowanie przepisu do wyceny
+    stores/               # konfigurowalna lista sieci + własne sklepy, Zod, akcja, formularz
+    pricing/              # CZYSTA logika cen i promocji: grosze (money.ts), aktualność
+                          # (freshness.ts), oferty i ceny jednostkowe (offers.ts), koszt
+                          # zużyty vs opakowania (cost.ts), parser CSV i import z walidacją,
+                          # StorePriceProvider / PromotionProvider, ceny demo, akcje, komponenty
+    budget/               # Zod budżetu, diagnoza (diagnose.ts), sprawdzenie koszyka, formularze
     meal-planning/ shopping/ auth/   # planowane moduły (README z zakresem)
   i18n/
     config.ts             # obsługiwane locale (pl-PL)
     messages/pl.ts        # wszystkie teksty UI i komunikaty walidacji
     format.ts             # Intl: liczby, kcal, g, %, PLN, daty
   lib/cn.ts               # łączenie klas Tailwind
+  lib/draft.ts            # parseDraft / fieldErrorsOf — walidacja wersji roboczych z karty
+  lib/session-draft.ts    # klucze sessionStorage (DRAFT_KEYS), useSessionDraft, readDrafts
 e2e/                      # testy Playwright
 supabase/
   migrations/             # wersjonowane migracje SQL (od etapu 3)
@@ -119,6 +127,29 @@ catalog = createInMemoryCatalog(DEMO_PRODUCTS, DEMO_RECIPES, isDemo)   (features
 Strony z danymi są statyczne (bez danych użytkownika); ocena zgodności jest jedynym
 dynamicznym elementem i liczy się wyłącznie na serwerze. Dane demo trafiają do bazy przez
 `buildDemoSeedSql()` → `supabase/seed.sql` (test pilnuje, że plik jest aktualny).
+
+## Przepływ: ceny, sklepy i budżet
+
+```
+sessionStorage (tk:draft:stores | budget | price-import | diet | restrictions)
+   └─ readDrafts() → akcja serwera (recipeCostAction / priceTableAction / checkBasketAction /
+                     importPricesAction)
+        └─ sanitizeDrafts → loadPricingEnvironment(drafts, todayInPoland())
+             ├─ storesDraftSchema / budgetDraftSchema          (Zod; błędna wersja → pominięta)
+             ├─ importPricesCsv(csv z wersji roboczej)          (ta sama walidacja co przy imporcie)
+             ├─ combinePriceSources(demo, import)               → StorePriceProvider + PromotionProvider
+             └─ PricingContext {products, prices, promotions, storeIds, today, allowEstimates}
+                  ├─ productOffers → priceStatus / promotionStatus (liczone przy odczycie)
+                  ├─ costNeeds(mergeNeeds(recipeNeeds…)) → wybór oferty na produkt:
+                  │     status (aktualna > nieaktualna > szacunkowa) → koszt opakowań → resztki
+                  │     → sumy osobno dla każdego statusu (used / packages)
+                  └─ diagnoseBudget(cost, budget, findCheaperAlternatives(…, evaluateProductFit))
+```
+
+Import CSV nie jest nigdzie zapisywany na serwerze: akcja zwraca raport, a przeglądarka trzyma
+surowy tekst pliku w `sessionStorage`. Każde użycie importuje go ponownie na serwerze, więc
+zmanipulowana wersja robocza przechodzi tę samą walidację co plik. Dostawcy cen są interfejsami —
+w etapie 7 dojdzie implementacja na Supabase (`store_prices`, `promotions`) bez zmian w logice.
 
 ## Ekrany i nawigacja
 

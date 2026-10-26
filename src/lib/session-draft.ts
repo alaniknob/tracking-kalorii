@@ -5,6 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 export const DRAFT_KEYS = {
   diet: "tk:draft:diet",
   restrictions: "tk:draft:restrictions",
+  stores: "tk:draft:stores",
+  budget: "tk:draft:budget",
+  priceImport: "tk:draft:price-import",
 } as const;
 
 /**
@@ -13,9 +16,11 @@ export const DRAFT_KEYS = {
  */
 export function useSessionDraft(key: string) {
   const [value, setValue] = useState("");
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     setValue(window.sessionStorage.getItem(key) ?? "");
+    setLoaded(true);
   }, [key]);
 
   const save = useCallback(
@@ -26,7 +31,24 @@ export function useSessionDraft(key: string) {
     [key],
   );
 
-  return { value, save };
+  const clear = useCallback(() => {
+    window.sessionStorage.removeItem(key);
+    setValue("");
+  }, [key]);
+
+  return { value, loaded, save, clear };
+}
+
+/** Wszystkie wersje robocze potrzebne do wyceny (sklepy, budżet, import cen, preferencje). */
+export function readDrafts() {
+  const get = (key: string) => window.sessionStorage.getItem(key) ?? "";
+  return {
+    stores: get(DRAFT_KEYS.stores),
+    budget: get(DRAFT_KEYS.budget),
+    priceImport: get(DRAFT_KEYS.priceImport),
+    diet: get(DRAFT_KEYS.diet),
+    restrictions: get(DRAFT_KEYS.restrictions),
+  };
 }
 
 export function clearAllDrafts() {

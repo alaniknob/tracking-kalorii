@@ -13,7 +13,7 @@ import {
   type RestrictionsField,
 } from "../schema";
 import { SettingsFormShell } from "./settings-form-shell";
-import { DRAFT_KEYS } from "./use-session-draft";
+import { DRAFT_KEYS } from "@/lib/session-draft";
 import { useSettingsForm } from "./use-settings-form";
 
 const reactionStyles = {

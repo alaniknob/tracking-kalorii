@@ -36,16 +36,22 @@ test.describe("katalog produktów i przepisów", () => {
   });
 });
 
-test("nawigacja mieści się na ekranie bez przewijania w poziomie", async ({ page }) => {
+test("nawigacja i ekrany mieszczą się na ekranie bez przewijania w poziomie", async ({ page }) => {
+  const viewport = page.viewportSize()!.width;
+  for (const path of ["/", "/ceny", "/ustawienia/budzet", "/ustawienia/sklepy", "/przepisy/kurczak-curry-z-ryzem"]) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    // Porównanie z rozmiarem okna urządzenia — przeglądarka mobilna przy przepełnieniu oddala widok (innerWidth rośnie).
+    const widths = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth,
+      inner: window.innerWidth,
+      nav: document.querySelector<HTMLElement>("[data-testid=main-nav]")!.scrollWidth -
+        document.querySelector<HTMLElement>("[data-testid=main-nav]")!.clientWidth,
+    }));
+    expect(widths.page, path).toBeLessThanOrEqual(viewport);
+    expect(widths.inner, path).toBe(viewport);
+    expect(widths.nav, path).toBeLessThanOrEqual(0);
+  }
   await page.goto("/");
-  const overflow = await page.evaluate(() => {
-    const nav = document.querySelector<HTMLElement>("[data-testid=main-nav]")!;
-    return {
-      page: document.documentElement.scrollWidth - window.innerWidth,
-      nav: nav.scrollWidth - nav.clientWidth,
-    };
-  });
-  expect(overflow.page).toBeLessThanOrEqual(0);
-  expect(overflow.nav).toBeLessThanOrEqual(0);
   await expect(page.getByTestId("main-nav").getByRole("link", { name: /Przepisy/ })).toBeVisible();
 });

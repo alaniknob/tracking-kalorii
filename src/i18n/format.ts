@@ -23,3 +23,15 @@ export function formatCurrency(value: number, locale: Locale = DEFAULT_LOCALE, c
 export function formatDate(date: Date, locale: Locale = DEFAULT_LOCALE): string {
   return new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" }).format(date);
 }
+
+/** Kwota w groszach (liczba całkowita) jako PLN. */
+export function formatGrosze(grosze: number, locale: Locale = DEFAULT_LOCALE): string {
+  return formatCurrency(grosze / 100, locale);
+}
+
+/** Data kalendarzowa YYYY-MM-DD (bez przesunięć strefy czasowej). */
+export function formatIsoDate(iso: string, locale: Locale = DEFAULT_LOCALE): string {
+  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(
+    new Date(`${iso}T00:00:00Z`),
+  );
+}

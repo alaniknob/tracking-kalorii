@@ -5,7 +5,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { SCREENS } from "@/config/routes";
-import { DRAFT_KEYS } from "@/features/preferences/components/use-session-draft";
+import { DRAFT_KEYS } from "@/lib/session-draft";
 import { getMessages } from "@/i18n";
 import { evaluateRecipeFitAction, type RecipeFitResponse } from "../actions";
 import type { RecipeFit, RecipeFitReason } from "../fit";

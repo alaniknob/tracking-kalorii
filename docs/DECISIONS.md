@@ -161,3 +161,65 @@ Pięć pozycji głównej nawigacji nie mieści się obok logo na telefonie. Zami
 w poziomie (słabo odkrywalne) nawigacja na wąskich ekranach jest osobnym wierszem
 `grid-cols-5` z krótkimi etykietami; od `sm` — jeden wiersz. Lista zakupów wypadła
 z głównej nawigacji (dostępna ze strony głównej) do czasu etapu 6.
+
+## D23. Kwoty w groszach
+
+W kodzie wszystkie kwoty są liczbami całkowitymi w groszach (`Grosze`), a w bazie
+`numeric(10,2)`. Bez ułamków zmiennoprzecinkowych przy sumowaniu; koszt zużytej części opakowania
+(`proportionalGrosze`) zaokrąglamy do grosza dopiero na końcu. Parser kwot (`parsePlnToGrosze`)
+przyjmuje „3,49”, „3.49”, „1 299,00”, „3,49 zł” i odrzuca więcej niż 2 miejsca po przecinku.
+
+## D24. Aktualność ceny liczona przy odczycie
+
+Cena potwierdzona jest „aktualna” przez 14 dni od daty pozyskania (`PRICE_STALE_AFTER_DAYS`
+w `pricing/constants.ts`), potem „nieaktualna”; szacunkowa zawsze „szacunkowa”. Status nie jest
+zapisywany w bazie (zestarzałby się), tylko liczony z `observed_on` i dzisiejszej daty
+w strefie Europe/Warsaw. 14 dni to kompromis: ceny w sieciach zmieniają się zwykle co
+gazetkę (1–2 tygodnie). Promocja: nadchodząca / aktywna / wygasła wg `starts_on`–`ends_on`.
+
+## D25. Potwierdzone i szacunkowe nigdy razem
+
+Wybór oferty dla produktu: najpierw status (aktualna > nieaktualna > szacunkowa), dopiero potem
+koszt opakowań i resztki — tańsza cena szacunkowa nie wypiera potwierdzonej. Sumy (koszt
+zużyty i koszt opakowań) są trzymane osobno dla każdego statusu i tak pokazywane; nie ma
+jednej „pewnej” kwoty łączącej potwierdzone z szacunkowymi. Budżet z cenami szacunkowymi daje
+wynik „mieści się tylko z cenami szacunkowymi”, nie „mieści się”. Promocji szacunkowych nie ma
+(zakaz fałszywych promocji) — także w schemacie bazy.
+
+## D26. Promocje z warunkami nie są wliczane
+
+Warunku („przy zakupie 2 opakowań”, karta klienta) nie da się niezawodnie zinterpretować
+z tekstu, a wliczenie go dla jednego opakowania zaniżyłoby koszt. Takie promocje są pokazywane
+z opisem, ale wycena używa ceny regularnej. Wygasłe promocje też są pokazywane („wygasła
+promocja”), żeby było widać, skąd różnica względem gazetki.
+
+## D27. Import CSV jako wersja robocza, walidowana przy każdym użyciu
+
+Bez kont nie mamy gdzie bezpiecznie zapisać cen użytkownika, więc akcja importu zwraca tylko
+raport, a przeglądarka trzyma surowy tekst pliku w `sessionStorage`. Każda wycena importuje go
+ponownie na serwerze (`importPricesCsv`) — jedna ścieżka walidacji dla pliku i dla
+(potencjalnie zmanipulowanej) wersji roboczej. Błędne wiersze są pomijane z opisem, poprawne
+przyjmowane (import częściowy), błąd całego pliku (nagłówki, rozmiar, kodowanie) — odrzuca plik.
+W etapie 7 import trafi do osobnej tabeli z `user_id`, nie do publicznego `store_prices`.
+
+## D28. Cena jednostkowa za 1 kg / 1 l w jednostce bazowej produktu
+
+Cena jednostkowa jest liczona po przeliczeniu opakowania na jednostkę bazową produktu (g lub ml,
+`toBase` z etapu 3), więc 500 g i 1 kg tego samego produktu są porównywalne. Opakowania na sztuki
+dostają dodatkowo cenę za sztukę. Opakowanie, którego nie da się przeliczyć (np. szt bez masy
+sztuki), jest pomijane i raportowane, a nie zgadywane.
+
+## D29. Promocje w module cen; uproszczenia koszyka
+
+Promocje są w `features/pricing` (osobny moduł `promotions` usunięty): oferta regularna
+i promocyjna to ten sam typ `Offer`, wybierany tą samą funkcją. Uproszczenia etapu 4: jeden
+rozmiar opakowania na produkt w koszyku (bez łączenia 500 g + 1 kg), sklep wybierany osobno
+dla każdego produktu (bez kosztu dojazdu). Tańsze zamienniki są proponowane tylko, gdy produkt
+przechodzi `evaluateProductFit` z regułami użytkownika (alergie > dieta > cena) — bez
+zapisanych ustawień propozycja jest oznaczona jako niesprawdzona pod tym kątem.
+
+## D30. Ceny demo ze stałymi datami
+
+Ceny przykładowe mają stałe daty (październik 2026), a nie „dziś minus N dni” — dzięki temu
+seed SQL jest deterministyczny, a z upływem czasu ceny demo uczciwie stają się „nieaktualne”.
+Testy jednostkowe i E2E podają datę jawnie lub sprawdzają zachowanie niezależne od daty.
