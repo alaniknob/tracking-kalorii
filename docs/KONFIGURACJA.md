@@ -40,10 +40,14 @@ Kolejność **musi** być taka:
 
 1. `supabase/migrations/20261026140000_catalog.sql`
 2. `supabase/migrations/20261026150000_pricing.sql`
-3. `supabase/migrations/20261026170000_accounts.sql`
+3. `supabase/migrations/20261026170000_accounts.sql` — **nie** tworzy nic w `auth`
+   (to schema Supabase; SQL Editor nie może tam pisać). Pliku
+   `supabase/local-auth-stub.sql` **nie wklejaj** na hoście.
 4. `supabase/seed.sql` (dane przykładowe; można pominąć, ale katalog w bazie będzie pusty — aplikacja i tak czyta demo z kodu)
 
-Nie edytuj plików migracji wstecz. Błąd „already exists” = ten krok już był.
+Jeśli katalog i ceny już weszły, a konta spadły na `permission denied for schema auth`:
+**nic nie usuwaj** (błąd był zanim powstały tabele w `public`) i wklej ponownie
+**tylko** poprawiony `…_accounts.sql`. Błąd „already exists” = ten krok już był.
 
 ### Wariant B — Supabase CLI (gdy możesz zalinkować projekt)
 

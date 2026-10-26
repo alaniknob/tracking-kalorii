@@ -34,6 +34,9 @@ $$;
 grant usage on schema public to anon, authenticated, service_role;
 SQL
 
+echo ">> supabase/local-auth-stub.sql"
+"${PSQL[@]}" -d "$DB" -f supabase/local-auth-stub.sql
+
 for f in supabase/migrations/*.sql supabase/seed.sql; do
   echo ">> $f"
   "${PSQL[@]}" -d "$DB" -f "$f"

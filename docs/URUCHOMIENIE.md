@@ -18,8 +18,11 @@ Kolejność SQL Editor (cały plik, Run):
 
 1. `supabase/migrations/20261026140000_catalog.sql`
 2. `supabase/migrations/20261026150000_pricing.sql`
-3. `supabase/migrations/20261026170000_accounts.sql`
+3. `supabase/migrations/20261026170000_accounts.sql` (bez zapisu do schema `auth`; nie wklejaj `local-auth-stub.sql`)
 4. opcjonalnie `supabase/seed.sql`
+
+Jeśli 1–2 już weszły, a 3 padło na `permission denied for schema auth`: nic nie dropuj —
+wklej ponownie tylko poprawiony plik kont.
 
 Albo: `npx supabase login` → `link --project-ref …` → `db push`.
 

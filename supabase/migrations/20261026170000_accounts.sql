@@ -1,46 +1,10 @@
 -- Etap 7: konta, trwałość danych użytkownika, RLS właściciela, usuwanie konta.
 -- Katalog publiczny (etapy 3–4) pozostaje tylko do odczytu. Dane użytkownika NIE trafiają
--- do tabel katalogu. Lokalny PostgreSQL bez Supabase: tworzymy szkielet auth.*, jeśli go nie ma.
--- Na hostowanym projekcie auth.users i auth.uid() już istnieją — IF NOT EXISTS ich nie rusza.
-
--- ---------------------------------------------------------------- auth (szkielet na lokalny Postgres)
-
-create schema if not exists auth;
-
-create table if not exists auth.users (
-  id uuid primary key,
-  email text,
-  created_at timestamptz not null default now()
-);
-
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_proc p
-    join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'auth'
-      and p.proname = 'uid'
-      and pg_get_function_identity_arguments(p.oid) = ''
-  ) then
-    execute $fn$
-      create function auth.uid()
-      returns uuid
-      language sql
-      stable
-      as $body$
-        select coalesce(
-          nullif(current_setting('request.jwt.claim.sub', true), ''),
-          (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'),
-          nullif(current_setting('tk.user_id', true), '')
-        )::uuid
-      $body$;
-    $fn$;
-  end if;
-end;
-$$;
-
-grant usage on schema auth to anon, authenticated, service_role;
+-- do tabel katalogu.
+--
+-- Ten plik NIE tworzy nic w schema auth (SQL Editor na hoście nie ma do tego uprawnień;
+-- auth.users i auth.uid() już są w projekcie Supabase). Szkielet auth.* na lokalny
+-- Postgres: supabase/local-auth-stub.sql (tylko npm run test:sql — nie wklejać na hoście).
 
 -- ---------------------------------------------------------------- profile
 
