@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,17 @@ import { saveStoresAction, type StoresFormState } from "../actions";
 import { DEFAULT_STORES_FORM_VALUES, storesDraftSchema } from "../schema";
 import { STORE_CHAINS } from "../stores";
 
-export function StoresForm() {
+export function StoresForm({
+  action = saveStoresAction,
+  continueHref,
+}: {
+  action?: typeof saveStoresAction;
+  continueHref?: string;
+} = {}) {
   const t = getMessages();
   const s = t.stores;
-  const [state, formAction, pending] = useActionState<StoresFormState, FormData>(saveStoresAction, {
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState<StoresFormState, FormData>(action, {
     status: "idle",
     values: DEFAULT_STORES_FORM_VALUES,
   });
@@ -23,8 +31,10 @@ export function StoresForm() {
   const { save } = draft;
 
   useEffect(() => {
-    if (state.status === "success") save(JSON.stringify(state.values));
-  }, [state, save]);
+    if (state.status !== "success") return;
+    save(JSON.stringify(state.values));
+    if (continueHref) router.push(continueHref);
+  }, [state, save, continueHref, router]);
 
   const values = useMemo(() => {
     if (state.status !== "idle" || draft.value === "") return state.values;
@@ -75,8 +85,8 @@ export function StoresForm() {
           </Field>
         </Card>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" disabled={pending}>
-            {pending ? s.submitting : s.submit}
+          <Button type="submit" size="lg" disabled={pending} data-testid={continueHref ? "wizard-next" : undefined}>
+            {pending ? s.submitting : continueHref ? getMessages().wizard.next : s.submit}
           </Button>
           <Button
             variant="ghost"

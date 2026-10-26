@@ -1,35 +1,30 @@
 import { expect, test } from "@playwright/test";
+import { expectRegisterWall } from "./helpers";
 
-test.describe("konta bez konfiguracji Supabase", () => {
-  test("rejestracja i logowanie pokazują brak konfiguracji", async ({ page }) => {
+test.describe("konta bez sesji", () => {
+  test("rejestracja i logowanie nie udają sesji", async ({ page }) => {
     await page.goto("/rejestracja");
-    await expect(page.getByTestId("brak-konfiguracji")).toBeVisible();
-    await expect(page.getByTestId("register-form")).toHaveCount(0);
+    await expect(page.getByTestId("brak-konfiguracji").or(page.getByTestId("register-form"))).toBeVisible();
 
     await page.goto("/logowanie");
-    await expect(page.getByTestId("brak-konfiguracji")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Zaloguj się" })).toHaveCount(0);
+    await expect(page.getByTestId("brak-konfiguracji").or(page.getByTestId("login-form"))).toBeVisible();
+    await expect(page.getByTestId("dashboard-user")).toHaveCount(0);
   });
 
-  test("panel i historia są dostępne, bez udawania zapisu na koncie", async ({ page }) => {
-    await page.goto("/panel");
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Panel");
-    await expect(page.getByTestId("brak-konfiguracji")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Generator jadłospisu" })).toBeVisible();
-
-    await page.goto("/historia");
-    await expect(page.getByTestId("brak-konfiguracji")).toBeVisible();
-
-    await page.goto("/profil");
-    await expect(page.getByTestId("brak-konfiguracji")).toBeVisible();
-    await expect(page.getByTestId("delete-account")).toHaveCount(0);
+  test("gość nie chodzi po aplikacji — produkt wraca do rejestracji", async ({ page }) => {
+    for (const path of ["/panel", "/generator", "/plan", "/zakupy", "/onboarding", "/przepisy", "/produkty"]) {
+      await page.goto(path);
+      await expectRegisterWall(page);
+    }
   });
 
-  test("API v1 nie udaje autoryzacji bez konfiguracji", async ({ request }) => {
+  test("API v1 bez sesji nie udaje autoryzacji", async ({ request }) => {
     const me = await request.get("/api/v1/me");
-    expect(me.status()).toBe(503);
-    expect(await me.json()).toEqual({ error: "brak_konfiguracji" });
+    expect([401, 503]).toContain(me.status());
+    const body = await me.json();
+    if (me.status() === 503) expect(body).toEqual({ error: "brak_konfiguracji" });
+    else expect(body).toEqual({ error: "unauthorized" });
     const plans = await request.get("/api/v1/plans");
-    expect(plans.status()).toBe(503);
+    expect([401, 503]).toContain(plans.status());
   });
 });

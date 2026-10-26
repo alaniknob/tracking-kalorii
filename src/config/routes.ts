@@ -38,10 +38,10 @@ export interface ScreenDefinition {
 
 export const SCREENS: Record<ScreenId, ScreenDefinition> = {
   home: { id: "home", path: "/", stage: 1, available: true, group: "start", listed: false },
-  onboarding: { id: "onboarding", path: "/onboarding", stage: 2, available: true, group: "start", listed: true },
-  login: { id: "login", path: "/logowanie", stage: 7, available: true, group: "account", listed: true },
-  register: { id: "register", path: "/rejestracja", stage: 7, available: true, group: "account", listed: true },
-  dashboard: { id: "dashboard", path: "/panel", stage: 7, available: true, group: "planning", listed: true },
+  onboarding: { id: "onboarding", path: "/onboarding", stage: 2, available: true, group: "start", listed: false },
+  login: { id: "login", path: "/logowanie", stage: 7, available: true, group: "account", listed: false },
+  register: { id: "register", path: "/rejestracja", stage: 7, available: true, group: "account", listed: false },
+  dashboard: { id: "dashboard", path: "/panel", stage: 7, available: true, group: "planning", listed: false },
   nutritionSettings: {
     id: "nutritionSettings",
     path: "/ustawienia/zywienie",
@@ -64,8 +64,33 @@ export const SCREENS: Record<ScreenId, ScreenDefinition> = {
   history: { id: "history", path: "/historia", stage: 7, available: true, group: "planning", listed: true },
 };
 
-export const MAIN_NAV = ["onboarding", "nutritionSettings", "allergies", "recipes", "generator"] as const satisfies readonly ScreenId[];
+/** Plan / generator / zakupy — produkt po kreatorze, nie mapa ekranów deweloperskich. */
+export const MAIN_NAV = ["week", "generator", "shopping"] as const satisfies readonly ScreenId[];
 
-export function listedScreens(): ScreenDefinition[] {
-  return Object.values(SCREENS).filter((screen) => screen.listed);
+const PROTECTED_PREFIXES = [
+  "/onboarding",
+  "/panel",
+  "/ustawienia",
+  "/generator",
+  "/plan",
+  "/zakupy",
+  "/przepisy",
+  "/produkty",
+  "/ceny",
+  "/profil",
+  "/historia",
+] as const;
+
+export function isProtectedAppPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
+
+export function isWizardPath(pathname: string): boolean {
+  return pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+}
+
+/** Konto (wylogowanie, usunięcie) działa w trakcie kreatora. */
+export function allowsIncompleteProfile(pathname: string): boolean {
+  return isWizardPath(pathname) || pathname === "/profil" || pathname.startsWith("/profil/");
+}
+

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectRegisterWall } from "./helpers";
 
 test.describe("weryfikacja etap 8", () => {
   test("404 po polsku, bez stack trace", async ({ page }) => {
@@ -20,10 +21,8 @@ test.describe("weryfikacja etap 8", () => {
     expect(headers["x-powered-by"]).toBeUndefined();
   });
 
-  test("posiłek bez planu prowadzi do pustego stanu, nie do martwego ekranu", async ({ page }) => {
+  test("posiłek bez konta wraca do rejestracji, nie do martwego ekranu", async ({ page }) => {
     await page.goto("/plan/posilki/1-1");
-    await expect(page.getByTestId("plan-empty")).toBeVisible();
-    await expect(page.getByTestId("go-generator")).toHaveAttribute("href", "/generator");
-    await expect(page.getByTestId("meal-detail")).toHaveCount(0);
+    await expectRegisterWall(page);
   });
 });

@@ -1,28 +1,21 @@
 import { expect, test } from "@playwright/test";
+import { expectRegisterWall } from "./helpers";
 
 test.describe("smoke", () => {
-  test("strona główna ładuje się po polsku", async ({ page }) => {
+  test("strona główna ładuje się po polsku i wymaga rejestracji", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/Tracking Kalorii/);
     await expect(page.locator("html")).toHaveAttribute("lang", "pl");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Plan żywienia");
-    await expect(page.getByRole("link", { name: "Oblicz zapotrzebowanie" })).toBeVisible();
+    await expectRegisterWall(page);
+    await expect(page.getByRole("link", { name: "Oblicz zapotrzebowanie" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Ekrany aplikacji" })).toHaveCount(0);
   });
 
-  test("logowanie bez konfiguracji pokazuje brak konfiguracji, a nie udaje sesji", async ({ page }) => {
+  test("logowanie bez sesji pokazuje formularz albo brak konfiguracji, a nie udaje sesji", async ({ page }) => {
     await page.goto("/logowanie");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Logowanie");
-    await expect(page.getByTestId("brak-konfiguracji")).toContainText("Brak konfiguracji");
-    await expect(page.getByTestId("login-form")).toHaveCount(0);
-  });
-
-  test("każdy link z listy ekranów prowadzi do istniejącej strony", async ({ page, request }) => {
-    await page.goto("/");
-    const hrefs = await page.locator("#ekrany a").evaluateAll((links) => links.map((a) => a.getAttribute("href")));
-    expect(hrefs.length).toBeGreaterThan(5);
-    for (const href of hrefs) {
-      const response = await request.get(href!);
-      expect(response.status(), href!).toBe(200);
-    }
+    await expect(page.getByTestId("brak-konfiguracji").or(page.getByTestId("login-form"))).toBeVisible();
+    await expect(page.getByTestId("dashboard-user")).toHaveCount(0);
   });
 });

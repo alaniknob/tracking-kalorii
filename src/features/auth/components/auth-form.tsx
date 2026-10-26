@@ -11,7 +11,15 @@ import { ConfigMissing } from "./config-missing";
 
 const idle = { status: "idle" as const, values: { email: "", password: "", consent: "" } };
 
-export function AuthForm({ mode, configured }: { mode: "login" | "register"; configured: boolean }) {
+export function AuthForm({
+  mode,
+  configured,
+  compactConfig = false,
+}: {
+  mode: "login" | "register";
+  configured: boolean;
+  compactConfig?: boolean;
+}) {
   const t = getMessages();
   const a = t.auth;
   const action = mode === "register" ? registerAction : loginAction;
@@ -19,11 +27,11 @@ export function AuthForm({ mode, configured }: { mode: "login" | "register"; con
   const router = useRouter();
 
   useEffect(() => {
-    if (state.status === "signed_in") router.push("/panel");
+    if (state.status === "signed_in") router.push("/");
   }, [state, router]);
 
-  if (!configured) return <ConfigMissing />;
-  if (state.status === "not_configured") return <ConfigMissing />;
+  if (!configured) return <ConfigMissing compact={compactConfig} />;
+  if (state.status === "not_configured") return <ConfigMissing compact={compactConfig} />;
 
   let values = idle.values;
   if (state.status === "idle" || state.status === "invalid" || state.status === "error") values = state.values;

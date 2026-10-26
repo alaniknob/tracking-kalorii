@@ -5,8 +5,8 @@ import { isSafeInternalPath } from "@/lib/safe-path";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const nextRaw = searchParams.get("next") ?? "/panel";
-  const safeNext = isSafeInternalPath(nextRaw) ? nextRaw : "/panel";
+  const nextRaw = searchParams.get("next") ?? "/";
+  const safeNext = isSafeInternalPath(nextRaw) ? nextRaw : "/";
   const login = new URL("/logowanie", origin);
 
   if (!isSupabaseConfigured() || searchParams.get("error")) {

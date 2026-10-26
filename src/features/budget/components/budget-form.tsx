@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,9 +11,16 @@ import { DRAFT_KEYS, useSessionDraft } from "@/lib/session-draft";
 import { saveBudgetAction, type BudgetFormState } from "../actions";
 import { BUDGET_LIMITS, budgetDraftSchema, DEFAULT_BUDGET_FORM_VALUES } from "../schema";
 
-export function BudgetForm() {
+export function BudgetForm({
+  action = saveBudgetAction,
+  continueHref,
+}: {
+  action?: typeof saveBudgetAction;
+  continueHref?: string;
+} = {}) {
   const b = getMessages().budget;
-  const [state, formAction, pending] = useActionState<BudgetFormState, FormData>(saveBudgetAction, {
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState<BudgetFormState, FormData>(action, {
     status: "idle",
     values: DEFAULT_BUDGET_FORM_VALUES,
   });
@@ -20,8 +28,10 @@ export function BudgetForm() {
   const { save } = draft;
 
   useEffect(() => {
-    if (state.status === "success") save(JSON.stringify(state.values));
-  }, [state, save]);
+    if (state.status !== "success") return;
+    save(JSON.stringify(state.values));
+    if (continueHref) router.push(continueHref);
+  }, [state, save, continueHref, router]);
 
   const values = useMemo(() => {
     if (state.status !== "idle" || draft.value === "") return state.values;
@@ -63,8 +73,8 @@ export function BudgetForm() {
           {b.allowEstimates}
         </CheckboxLabel>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={pending}>
-            {pending ? b.submitting : b.submit}
+          <Button type="submit" disabled={pending} data-testid={continueHref ? "wizard-next" : undefined}>
+            {pending ? b.submitting : continueHref ? getMessages().wizard.finish : b.submit}
           </Button>
           <Button
             variant="ghost"

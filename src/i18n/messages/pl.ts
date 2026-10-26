@@ -44,14 +44,45 @@ export const pl = {
   },
   /** Krótkie etykiety głównej nawigacji. */
   nav: {
-    onboarding: "Profil",
-    nutritionSettings: "Żywienie",
-    allergies: "Alergie",
-    recipes: "Przepisy",
+    week: "Plan",
     generator: "Generator",
+    shopping: "Zakupy",
   } satisfies Partial<Record<ScreenId, string>>,
+  wizard: {
+    progress: (step: number, total: number) => `Krok ${step} z ${total}`,
+    next: "Dalej",
+    saving: "Zapisywanie…",
+    finish: "Zakończ i przejdź do planu",
+    backToProfile: "Wróć do danych ciała",
+    resumeNote: "Dokończ kreator, żeby przejść do planu, generatora i zakupów.",
+    steps: {
+      profile: {
+        title: "Twoje dane",
+        description:
+          "Wzrost, masa, wiek, aktywność, liczba posiłków i czas na gotowanie. Płeć jest opcjonalna — służy wyłącznie wzorowi Mifflina–St Jeora.",
+      },
+      goal: {
+        title: "Cel żywieniowy",
+        description:
+          "Wybierz cel. Pokażemy szacunek BMR, TDEE, kaloryczności diety i makroskładników — to nie jest orzeczenie medyczne.",
+      },
+      allergies: {
+        title: "Alergie i zdrowie",
+        description:
+          "14 alergenów wymagających oznaczania w UE oraz opcjonalne informacje o zdrowiu, które włączają istniejące limity bezpieczeństwa.",
+      },
+      stores: {
+        title: "Ulubione sklepy",
+        description: "Wybierz sklepy, w których zwykle robisz zakupy.",
+      },
+      budget: {
+        title: "Budżet tygodniowy",
+        description: "Tygodniowy budżet na żywność. Generator będzie go pilnował przy liście zakupów.",
+      },
+    },
+  },
   home: {
-    ctaPrimary: "Oblicz zapotrzebowanie",
+    ctaPrimary: "Załóż konto",
     ctaScreens: "Zobacz plan rozwoju",
     featuresTitle: "Co już działa",
     features: [
@@ -85,7 +116,8 @@ export const pl = {
       },
     ],
     screensTitle: "Ekrany aplikacji",
-    screensLead: "Ekrany konta wymagają konfiguracji Supabase (docs/KONFIGURACJA.md). Bez niej zobaczysz komunikat „brak konfiguracji” — aplikacja nie udaje logowania.",
+    screensLead:
+      "Najpierw konto, potem krótki kreator (dane, cel, alergie, sklepy, budżet). Plan, generator i lista zakupów są na stronie głównej po konfiguracji.",
     groups: {
       start: "Start",
       account: "Konto",
@@ -990,10 +1022,10 @@ export const pl = {
     config: {
       title: "Brak konfiguracji",
       body: "Konta i trwały zapis wymagają projektu Supabase. W pliku .env.local ustaw NEXT_PUBLIC_SUPABASE_URL oraz NEXT_PUBLIC_SUPABASE_ANON_KEY (klucz anon albo publishable). Bez tych zmiennych logowanie nie działa — nie udajemy sesji.",
-      hint: "Dokładne kroki: docs/KONFIGURACJA.md. Katalog, kalkulator i generator działają bez konta, w tej karcie przeglądarki.",
+      hint: "Dokładne kroki: docs/KONFIGURACJA.md. Po ustawieniu zmiennych w .env.local uruchom ponownie aplikację.",
     },
     dashboard: {
-      guest: "Nie jesteś zalogowana. Plan i ustawienia zostają w tej karcie. Po skonfigurowaniu Supabase i zalogowaniu zapiszą się na koncie.",
+      guest: "Żeby ułożyć plan, najpierw załóż konto. Bez konfiguracji Supabase logowanie nie działa — nie udajemy sesji.",
       signedIn: (email: string) => `Jesteś zalogowana jako ${email}. Nowe plany i ustawienia zapisujemy na Twoim koncie.`,
       planHint: "Ułóż 7-dniowy jadłospis z celu kalorycznego, alergii i budżetu.",
       shoppingHint: "Lista z aktualnego planu: opakowania, sklepy, odhaczanie.",

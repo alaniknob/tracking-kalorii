@@ -1,65 +1,20 @@
 import { expect, test } from "@playwright/test";
+import { expectRegisterWall } from "./helpers";
 
 test.describe("katalog produktów i przepisów", () => {
-  test("produkty są oznaczone jako przykładowe, z kompletnością danych", async ({ page }) => {
+  test("gość nie wchodzi do katalogu", async ({ page }) => {
     await page.goto("/produkty");
-    await expect(page.getByTestId("demo-notice")).toContainText("dane przykładowe");
-    await expect(page.getByTestId("product-przyprawa-curry")).toContainText("Dane minimalne");
-    await expect(page.getByTestId("product-chleb-zytni")).toContainText("Skład nieznany — wymaga weryfikacji");
-    await expect(page.getByTestId("product-mleko-2")).toContainText("na 100 ml");
-  });
-
-  test("szczegóły przepisu: wartości wyliczone ze składników i ostrzeżenie o brakach", async ({ page }) => {
+    await expectRegisterWall(page);
     await page.goto("/przepisy");
-    await expect(page.getByTestId("demo-notice")).toBeVisible();
-    await page.getByRole("link", { name: /Kurczak curry/ }).click();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Kurczak curry z papryką i ryżem");
-    await expect(page.getByRole("table").first()).toContainText("Na porcję");
-    await expect(page.getByText("Kalorie i makroskładniki są wyliczane ze składników")).toBeVisible();
-    await expect(page.getByTestId("incomplete-data")).toContainText("„Przyprawa curry” nie ma danych");
-    await expect(page.getByText("Ustaw preferencje i alergie")).toBeVisible();
-  });
-
-  test("alergia z ustawień wyklucza przepis, a brak danych o składzie wymaga weryfikacji", async ({ page }) => {
-    await page.goto("/ustawienia/alergie");
-    await page.getByRole("radiogroup", { name: "Mleko (w tym laktoza)", exact: true }).getByText("Alergia").click();
-    await page.getByRole("button", { name: "Sprawdź i zapisz w tej karcie" }).click();
-    await expect(page.getByTestId("settings-saved")).toBeVisible();
-
-    await page.goto("/przepisy");
-    await expect(page.getByTestId("fit-owsianka-bananowa")).toHaveText("Wykluczony dla Ciebie");
-    await expect(page.getByTestId("fit-jajecznica-z-papryka")).toHaveText("Wymaga weryfikacji");
-    await expect(page.getByTestId("fit-tofu-z-warzywami")).toHaveText("Brak konfliktu z Twoimi ustawieniami");
-
-    await page.goto("/przepisy/owsianka-bananowa");
-    await expect(page.getByTestId("fit-details")).toContainText("Alergen: Mleko (w tym laktoza) (zawiera).");
+    await expectRegisterWall(page);
   });
 });
 
-test("nawigacja i ekrany mieszczą się na ekranie bez przewijania w poziomie", async ({ page }) => {
+test("nawigacja gościa mieści się na ekranie bez przewijania w poziomie", async ({ page }) => {
   const viewport = page.viewportSize()!.width;
-  for (const path of [
-    "/",
-    "/onboarding",
-    "/ustawienia/zywienie",
-    "/ustawienia/alergie",
-    "/ceny",
-    "/ustawienia/budzet",
-    "/ustawienia/sklepy",
-    "/przepisy/kurczak-curry-z-ryzem",
-    "/produkty",
-    "/generator",
-    "/plan",
-    "/zakupy",
-    "/logowanie",
-    "/rejestracja",
-    "/panel",
-    "/historia",
-    "/profil",
-  ]) {
+  for (const path of ["/", "/logowanie", "/rejestracja"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
-    // Porównanie z rozmiarem okna urządzenia — przeglądarka mobilna przy przepełnieniu oddala widok (innerWidth rośnie).
     const widths = await page.evaluate(() => ({
       page: document.documentElement.scrollWidth,
       inner: window.innerWidth,
@@ -70,6 +25,4 @@ test("nawigacja i ekrany mieszczą się na ekranie bez przewijania w poziomie", 
     expect(widths.inner, path).toBe(viewport);
     expect(widths.nav, path).toBeLessThanOrEqual(0);
   }
-  await page.goto("/");
-  await expect(page.getByTestId("main-nav").getByRole("link", { name: /Przepisy/ })).toBeVisible();
 });

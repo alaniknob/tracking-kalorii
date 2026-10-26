@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { applyDrafts, hasLocalDrafts, readAllDrafts, setDraftPersistHook } from "@/lib/session-draft";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { loadAccountDraftsAction, persistAllDraftsAction, persistDraftAction } from "../persist";
 
 /**
@@ -10,6 +11,7 @@ import { loadAccountDraftsAction, persistAllDraftsAction, persistDraftAction } f
  */
 export function AccountSync() {
   useEffect(() => {
+    if (!isSupabaseConfigured()) return;
     setDraftPersistHook((key, value) => {
       void persistDraftAction(key, value);
     });
