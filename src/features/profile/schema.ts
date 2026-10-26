@@ -114,6 +114,19 @@ export const DEFAULT_PROFILE_FORM_VALUES: ProfileFormValues = {
   healthFlags: [],
 };
 
+/** Kształt wersji roboczej profilu z sessionStorage (niezaufane — walidowane jak formularz). */
+export const profileDraftSchema = z.object({
+  birthDate: z.string(),
+  heightCm: z.string(),
+  weightKg: z.string(),
+  targetWeightKg: z.string(),
+  sex: z.string(),
+  activityLevel: z.string(),
+  goal: z.string(),
+  mealsPerDay: z.string(),
+  healthFlags: z.array(z.string()),
+}) satisfies z.ZodType<ProfileFormValues>;
+
 export function readProfileFormData(formData: FormData): ProfileFormValues {
   const text = (key: keyof ProfileFormValues) => {
     const value = formData.get(key);

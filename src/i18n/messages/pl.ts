@@ -132,7 +132,16 @@ export const pl = {
   },
   profile: {
     privacyNote:
-      "Dane nie są nigdzie zapisywane — obliczenia wykonywane są na serwerze tylko na potrzeby tego wyniku. Pola dotyczące zdrowia są opcjonalne.",
+      "Dane nie są zapisywane na serwerze — obliczenia wykonywane są tylko na potrzeby tego wyniku. Pola dotyczące zdrowia są opcjonalne.",
+    draft: {
+      title: "Użyć tego profilu w generatorze jadłospisu?",
+      note: "Generator potrzebuje Twojego profilu. Na Twoje życzenie zachowamy go tylko w tej karcie przeglądarki (sessionStorage) — zniknie po jej zamknięciu, a serwer sprawdza go od nowa przy każdym użyciu.",
+      save: "Zachowaj profil w tej karcie",
+      saved: "Profil jest zachowany w tej karcie — generator go użyje.",
+      goToGenerator: "Przejdź do generatora",
+      clear: "Usuń profil z tej karty",
+      loaded: "Wczytano profil zachowany w tej karcie.",
+    },
     sections: {
       body: "Dane podstawowe",
       goal: "Cel i aktywność",
@@ -319,6 +328,8 @@ export const pl = {
         `„${product}” jest jednocześnie na liście preferowanych i nielubianych produktów.`,
       preferredProductExcluded: (product: string, kind: string) =>
         `„${product}” usunięto z preferowanych, bo jest wykluczony (${kind}).`,
+      preferredProductConflictsRules: (product: string, matches: string, reason: string) =>
+        `„${product}” usunięto z preferowanych: wszystkie pasujące produkty z katalogu (${matches}) są wykluczone przez Twoje ustawienia (${reason}).`,
     },
   },
   nutrition: {
@@ -662,6 +673,17 @@ export const pl = {
         promoEstimate: "Promocja nie może być szacunkowa — importuj tylko potwierdzone promocje.",
         conditionsWithoutPromo: "Warunki podaje się tylko dla promocji.",
         duplicate: "Powtórzony wiersz (ten sam produkt, sklep, opakowanie i data).",
+      },
+    },
+  },
+  planner: {
+    pantry: {
+      errors: {
+        tooMany: (max: number) => `Możesz podać maksymalnie ${max} pozycji zapasów.`,
+        product: "Wybierz produkt z listy.",
+        duplicate: (name: string) => `„${name}” jest już na liście zapasów.`,
+        amount: "Podaj ilość większą od 0.",
+        unit: (name: string) => `Tej jednostki nie da się przeliczyć dla produktu „${name}”.`,
       },
     },
   },

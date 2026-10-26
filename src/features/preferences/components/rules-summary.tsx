@@ -27,6 +27,12 @@ function conflictText(conflict: PreferenceConflict): string {
       return p.conflicts.productPreferredAndDisliked(conflict.product);
     case "preferred_product_excluded":
       return p.conflicts.preferredProductExcluded(conflict.product, p.exclusionKinds[conflict.kind]);
+    case "preferred_product_conflicts_rules":
+      return p.conflicts.preferredProductConflictsRules(
+        conflict.product,
+        conflict.matches.join(", "),
+        conflict.reason.kind === "group" ? p.foodGroups[conflict.reason.group] : p.allergens[conflict.reason.allergen],
+      );
   }
 }
 

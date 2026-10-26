@@ -1,6 +1,6 @@
 import { getMessages } from "@/i18n";
 import { fieldErrorsOf, parseDraft } from "@/lib/draft";
-import { resolveFoodRules, type FoodRules } from "./rules";
+import { resolveFoodRules, type CatalogProductInfo, type FoodRules } from "./rules";
 import {
   dietDraftSchema,
   dietSettingsSchema,
@@ -33,16 +33,25 @@ const toDietRules = (diet: DietSettings) => ({
 });
 
 /** Reguły z wersji roboczych obu ekranów (niezaufane dane z przeglądarki, walidowane od nowa). */
-export function resolveRulesFromDrafts(dietDraftJson: string, restrictionsDraftJson: string) {
+export function resolveRulesFromDrafts(
+  dietDraftJson: string,
+  restrictionsDraftJson: string,
+  products: readonly CatalogProductInfo[] = [],
+) {
   const diet = parseDraft<DietSettings>(dietDraftJson, dietDraftSchema, dietSettingsSchema);
   const restrictions = parseDraft<RestrictionsSettings>(restrictionsDraftJson, restrictionsDraftSchema, restrictionsSchema);
   return {
     hasSettings: diet !== null || restrictions !== null,
-    rules: resolveFoodRules(diet ? toDietRules(diet) : null, restrictions),
+    diet,
+    rules: resolveFoodRules(diet ? toDietRules(diet) : null, restrictions, products),
   };
 }
 
-export function evaluateDietSettings(values: DietFormValues, restrictionsDraftJson = ""): DietFormState {
+export function evaluateDietSettings(
+  values: DietFormValues,
+  restrictionsDraftJson = "",
+  products: readonly CatalogProductInfo[] = [],
+): DietFormState {
   const parsed = dietSettingsSchema.safeParse(values);
   if (!parsed.success) {
     return {
@@ -53,10 +62,14 @@ export function evaluateDietSettings(values: DietFormValues, restrictionsDraftJs
     };
   }
   const restrictions = parseDraft<RestrictionsSettings>(restrictionsDraftJson, restrictionsDraftSchema, restrictionsSchema);
-  return toState(values, resolveFoodRules(toDietRules(parsed.data), restrictions), restrictions !== null);
+  return toState(values, resolveFoodRules(toDietRules(parsed.data), restrictions, products), restrictions !== null);
 }
 
-export function evaluateRestrictions(values: RestrictionsFormValues, dietDraftJson = ""): RestrictionsFormState {
+export function evaluateRestrictions(
+  values: RestrictionsFormValues,
+  dietDraftJson = "",
+  products: readonly CatalogProductInfo[] = [],
+): RestrictionsFormState {
   const parsed = restrictionsSchema.safeParse(values);
   if (!parsed.success) {
     return {
@@ -67,5 +80,5 @@ export function evaluateRestrictions(values: RestrictionsFormValues, dietDraftJs
     };
   }
   const diet = parseDraft<DietSettings>(dietDraftJson, dietDraftSchema, dietSettingsSchema);
-  return toState(values, resolveFoodRules(diet ? toDietRules(diet) : null, parsed.data), diet !== null);
+  return toState(values, resolveFoodRules(diet ? toDietRules(diet) : null, parsed.data, products), diet !== null);
 }

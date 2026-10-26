@@ -8,6 +8,10 @@ export const DRAFT_KEYS = {
   stores: "tk:draft:stores",
   budget: "tk:draft:budget",
   priceImport: "tk:draft:price-import",
+  /** Profil zapisywany tylko na wyraźne życzenie (zawiera dane o zdrowiu). */
+  profile: "tk:draft:profile",
+  pantry: "tk:draft:pantry",
+  plan: "tk:draft:plan",
 } as const;
 
 /**
@@ -49,6 +53,12 @@ export function readDrafts() {
     diet: get(DRAFT_KEYS.diet),
     restrictions: get(DRAFT_KEYS.restrictions),
   };
+}
+
+/** Wersje robocze generatora: wycena + profil i zapasy. */
+export function readPlannerDrafts() {
+  const get = (key: string) => window.sessionStorage.getItem(key) ?? "";
+  return { ...readDrafts(), profile: get(DRAFT_KEYS.profile), pantry: get(DRAFT_KEYS.pantry) };
 }
 
 export function clearAllDrafts() {

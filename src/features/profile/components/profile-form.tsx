@@ -1,15 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo } from "react";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox, describedBy, Field, Input, Select } from "@/components/ui/form";
 import { ACTIVITY_LEVELS, GOALS, HEALTH_FLAGS, SEXES } from "@/features/nutrition/types";
+import { SCREENS } from "@/config/routes";
 import { getMessages } from "@/i18n";
+import { DRAFT_KEYS, useSessionDraft } from "@/lib/session-draft";
 import { calculateProfileAction } from "../actions";
 import type { ProfileFormState } from "../calculate";
-import { DEFAULT_PROFILE_FORM_VALUES, type ProfileField } from "../schema";
+import { DEFAULT_PROFILE_FORM_VALUES, profileDraftSchema, type ProfileField, type ProfileFormValues } from "../schema";
 import { NutritionSummary } from "./nutrition-summary";
 
 const initialState: ProfileFormState = { status: "idle", values: DEFAULT_PROFILE_FORM_VALUES };
@@ -18,7 +20,18 @@ export function ProfileForm() {
   const t = getMessages();
   const f = t.profile.fields;
   const [state, formAction, pending] = useActionState(calculateProfileAction, initialState);
-  const values = state.values;
+  const draft = useSessionDraft(DRAFT_KEYS.profile);
+  const draftValues = useMemo((): ProfileFormValues | null => {
+    if (draft.value === "") return null;
+    try {
+      const parsed = profileDraftSchema.safeParse(JSON.parse(draft.value));
+      return parsed.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
+  }, [draft.value]);
+  const values = state.status === "idle" && draftValues ? draftValues : state.values;
+  const savedForPlanner = state.status === "success" && draft.value === JSON.stringify(state.values);
   const errors: Partial<Record<ProfileField, string>> = state.status === "invalid" ? state.fieldErrors : {};
 
   const aria = (id: ProfileField, hint?: string) => ({
@@ -41,6 +54,14 @@ export function ProfileForm() {
         <p id="profil-prywatnosc" className="text-sm leading-relaxed text-muted">
           {t.profile.privacyNote}
         </p>
+        {state.status === "idle" && draftValues ? (
+          <Alert tone="info" data-testid="profile-draft-loaded">
+            {t.profile.draft.loaded}{" "}
+            <button type="button" onClick={draft.clear} className="font-medium text-primary hover:underline">
+              {t.profile.draft.clear}
+            </button>
+          </Alert>
+        ) : null}
 
         {state.status === "invalid" ? (
           <Alert tone="danger" data-testid="form-error">
@@ -135,7 +156,32 @@ export function ProfileForm() {
       </form>
 
       <div className="lg:sticky lg:top-20 lg:self-start" aria-live="polite">
-        {state.status === "success" ? <NutritionSummary result={state.result} mealsPerDay={state.mealsPerDay} /> : null}
+        {state.status === "success" ? (
+          <div className="space-y-4">
+            <NutritionSummary result={state.result} mealsPerDay={state.mealsPerDay} />
+            <Card className="space-y-3" data-testid="profile-draft">
+              <h2 className="text-sm font-semibold">{t.profile.draft.title}</h2>
+              <p className="text-xs leading-relaxed text-muted">{t.profile.draft.note}</p>
+              {savedForPlanner ? (
+                <>
+                  <p className="text-sm font-medium text-success" data-testid="profile-draft-saved">
+                    {t.profile.draft.saved}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <ButtonLink href={SCREENS.generator.path}>{t.profile.draft.goToGenerator}</ButtonLink>
+                    <Button type="button" variant="secondary" onClick={draft.clear}>
+                      {t.profile.draft.clear}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <Button type="button" variant="secondary" onClick={() => draft.save(JSON.stringify(state.values))}>
+                  {t.profile.draft.save}
+                </Button>
+              )}
+            </Card>
+          </div>
+        ) : null}
       </div>
     </div>
   );

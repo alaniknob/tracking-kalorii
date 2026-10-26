@@ -94,19 +94,35 @@ export function bestChoice(offers: readonly Offer[], needBase: number): OfferCho
   return best;
 }
 
+/** Oferty produktów policzone raz dla kontekstu (przy wielokrotnej wycenie, np. w generatorze). */
+export type OfferIndex = Map<string, ReturnType<typeof productOffers> | null>;
+
+export function indexOffers(ctx: PricingContext): OfferIndex {
+  const index: OfferIndex = new Map();
+  for (const product of ctx.products.values()) {
+    index.set(product.id, productOffers(product, ctx.prices, ctx.promotions, ctx.today));
+  }
+  return index;
+}
+
+function offersFor(productId: string, ctx: PricingContext, index?: OfferIndex) {
+  if (index?.has(productId)) return index.get(productId)!;
+  const product = ctx.products.get(productId);
+  return product ? productOffers(product, ctx.prices, ctx.promotions, ctx.today) : null;
+}
+
 /** Koszt listy potrzeb w wybranych sklepach — z podziałem na koszt zużyty i koszt opakowań. */
-export function costNeeds(needs: readonly Need[], ctx: PricingContext): BasketCost {
+export function costNeeds(needs: readonly Need[], ctx: PricingContext, index?: OfferIndex): BasketCost {
   const used = emptyTotals();
   const packages = emptyTotals();
   const items: ItemCost[] = [];
 
   for (const need of mergeNeeds(needs)) {
-    const product = ctx.products.get(need.productId);
-    if (!product) {
+    const all = offersFor(need.productId, ctx, index);
+    if (!all) {
       items.push({ productId: need.productId, needBase: need.baseAmount, priced: false, reason: "unknown_product" });
       continue;
     }
-    const all = productOffers(product, ctx.prices, ctx.promotions, ctx.today);
     const allowed = (o: Offer) => ctx.allowEstimates || o.status !== "estimated";
     const selected = all.offers.filter((o) => ctx.storeIds.has(o.storeId));
     const choice = bestChoice(selected.filter(allowed), need.baseAmount);

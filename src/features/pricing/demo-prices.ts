@@ -61,6 +61,22 @@ const ROWS: Row[] = [
   ["olej-rzepakowy", "kaufland", "15.99", 2, "l", "2026-08-20"],
   ["maslo-orzechowe", "lidl", "9.99", 350, "g", "2026-10-21"],
   ["maslo-orzechowe", "carrefour", "11.99", 350, "g", "2026-10-10", "szac"],
+  ["jablko", "lidl", "3.99", 1, "kg", "2026-10-21"],
+  ["jablko", "biedronka", "4.29", 1, "kg", "2026-10-22"],
+  ["jablko", "kaufland", "3.79", 1, "kg", "2026-10-20"],
+  ["marchew", "lidl", "2.99", 1, "kg", "2026-10-21"],
+  ["marchew", "biedronka", "2.79", 1, "kg", "2026-10-22"],
+  ["ziemniaki", "lidl", "6.99", 2, "kg", "2026-10-21"],
+  ["ziemniaki", "biedronka", "5.99", 2, "kg", "2026-10-22"],
+  ["ziemniaki", "aldi", "7.49", 2, "kg", "2026-10-23"],
+  ["soczewica-czerwona", "lidl", "5.49", 400, "g", "2026-10-21"],
+  ["soczewica-czerwona", "kaufland", "6.29", 500, "g", "2026-10-20"],
+  ["kasza-gryczana", "lidl", "4.99", 400, "g", "2026-10-21"],
+  ["kasza-gryczana", "biedronka", "3.99", 400, "g", "2026-10-22"],
+  ["twarog-poltlusty", "lidl", "4.29", 250, "g", "2026-10-21"],
+  ["twarog-poltlusty", "biedronka", "3.99", 250, "g", "2026-10-22"],
+  ["napoj-sojowy", "lidl", "5.99", 1, "l", "2026-10-21"],
+  ["napoj-sojowy", "carrefour", "6.49", 1, "l", "2026-10-19"],
   // „przyprawa-curry” celowo bez ceny — demonstracja stanu „brak ceny”.
 ];
 
