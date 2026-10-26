@@ -17,7 +17,7 @@ Aplikacja webowa dla rynku polskiego do:
 Interfejs w całości po polsku (komunikaty, daty, kwoty w PLN), architektura gotowa na i18n.
 Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 
-## Stan na koniec etapu 5 (bieżący)
+## Stan na koniec etapu 6 (bieżący)
 
 ### Działa
 
@@ -36,6 +36,7 @@ Aplikacja nie jest wyrobem medycznym — wyniki są szacunkiem.
 | Generator jadłospisu (7 dni) | `/generator` | Cel z profilu zachowanego w karcie, zapasy, data startu, diagnoza niewykonalności |
 | Widok tygodnia | `/plan` | Dni z kcal i makro, trzy rodzaje kosztu, budżet, koszyk, wykorzystane zapasy |
 | Szczegóły posiłku | `/plan/posilki/[id]` | Składniki przeliczone na porcję, instrukcja, kcal, makro, koszt, resztki |
+| Lista zakupów | `/zakupy` | Z planu tygodnia: sumowanie, opakowania, kategorie / sklepy, zapasy, odhaczanie, koszt |
 | Ekrany zastępcze (oznaczone „Niedostępne · Etap N”) | pozostałe | Brak martwych przycisków |
 | Strony błędów po polsku | 404, błąd | Bez stack trace'ów |
 
@@ -252,6 +253,41 @@ odcisk ustawień; widok tygodnia i posiłku odtwarzają plan na serwerze. Zmiana
 ustawienia → komunikat „Ustawienia zmieniły się od wygenerowania planu” bez pokazywania starego
 planu (mógłby nie uwzględniać np. nowej alergii). Plan starszy niż 60 dni wygasa.
 
+### Lista zakupów (etap 6)
+
+**Źródło:** lista jest zawsze liczona z planu odtworzonego na serwerze (`buildShoppingList` w
+`src/features/shopping/list.ts`, wywoływane w `buildPlanView`) — każda zmiana planu (nowe
+generowanie, zmiana zapasów lub daty) od razu daje nową listę; nie ma osobnej kopii do
+synchronizacji. Bez planu ekran prowadzi do generatora; przy zmienionych ustawieniach pokazuje
+ten sam komunikat co widok tygodnia.
+
+**Pozycja:** jeden produkt = jedna pozycja — ilości ze wszystkich posiłków są **sumowane** (z
+listą przepisów i liczbą posiłków). Pokazujemy: potrzebną ilość, ile pokrywają zapasy, ile
+kupić, **liczbę całych opakowań** × wielkość w wybranym sklepie, przybliżoną liczbę sztuk (gdy
+produkt ma masę sztuki), resztkę z opakowań, cenę opakowania × liczba, status ceny (aktualna /
+nieaktualna / szacunkowa) i promocję. Produkt bez ceny zostaje na liście z przyczyną („Brak
+ceny”), **nigdy jako 0 zł**.
+
+**Zapasy:** produkty w całości pokryte zapasami trafiają do sekcji „Masz w domu” (z ilością
+użytą z zapasów); częściowo pokryte — na listę z odliczoną ilością.
+
+**Grupowanie:** przełącznik „Według kategorii” (kolejność kategorii katalogu) / „Według sklepu”
+(sklepy alfabetycznie, grupa „Bez ceny” na końcu); każda grupa ma swój koszt.
+
+**Odhaczanie:** pole wyboru przy każdej pozycji (duży obszar dotyku), pasek postępu, „Do kupienia”
+i „Kupione” jako kwoty, opcja „Ukryj kupione”, „Wyczyść odhaczenia”. Odhaczenia są w
+`sessionStorage` tej karty jako `{produkt: podpis}`, gdzie podpis = sklep + liczba opakowań +
+ilość do kupienia. Gdy po zmianie planu podpis się różni, pozycja **wraca na listę** z plakietką
+„Zmieniono po aktualizacji planu” i komunikatem nad listą; produkty, których już nie ma w planie,
+są usuwane z odhaczeń.
+
+**Koszt:** suma do kupienia, osobno ceny aktualne / nieaktualne / szacunkowe (nigdy łączone),
+liczba produktów bez ceny, data wyceny i wybrane sklepy. Suma listy = koszt „do kupienia” z
+widoku tygodnia.
+
+**Telefon:** układ jednokolumnowy (max. 3xl na desktopie), bez poziomego przewijania przy 375 px,
+pola wyboru 24 px w etykiecie na całą szerokość wiersza.
+
 ### Ograniczenia obecnej wersji
 
 - Brak kont i trwałego zapisu (wymaga Supabase — etap 7); preferencje tylko w karcie przeglądarki.
@@ -270,8 +306,10 @@ planu (mógłby nie uwzględniać np. nowej alergii). Plan starszy niż 60 dni w
   przeglądarki do etapu 7.
 - Jeden rozmiar opakowania na produkt w koszyku (bez łączenia np. 500 g + 1 kg); wybór sklepu
   per produkt — bez kosztu dojazdu i minimalnej liczby sklepów.
-- Zapasy i plan tylko w karcie przeglądarki; brak listy zakupów z odhaczaniem i grupowaniem wg
-  sklepu (etap 6) — na razie koszyk w widoku tygodnia.
+- Zapasy, plan i odhaczenia listy zakupów tylko w karcie przeglądarki (znikają po jej zamknięciu;
+  brak współdzielenia listy między urządzeniami do etapu 7).
+- Lista zakupów nie pozwala ręcznie dopisać produktu spoza planu, zmienić sklepu dla pozycji ani
+  edytować ilości; brak trybu offline i eksportu/druku.
 
 ## Zakres docelowy (planowany)
 

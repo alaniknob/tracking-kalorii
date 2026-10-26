@@ -333,9 +333,14 @@ export function GeneratorPanel({ products }: { products: PantryProductOption[] }
           <div className="space-y-4" data-testid="generator-result">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold tracking-tight">{m.resultTitle}</h2>
-              <ButtonLink href="/plan" data-testid="open-week">
-                {m.openWeek}
-              </ButtonLink>
+              <span className="flex flex-wrap gap-2">
+                <ButtonLink href="/zakupy" variant="secondary">
+                  {m.openShopping}
+                </ButtonLink>
+                <ButtonLink href="/plan" data-testid="open-week">
+                  {m.openWeek}
+                </ButtonLink>
+              </span>
             </div>
             <PlanSummary view={state.view} />
           </div>

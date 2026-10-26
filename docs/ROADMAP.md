@@ -11,7 +11,7 @@ w `src/config/routes.ts` i widoczny w UI.
 | 3 | Produkty, przepisy, alergeny | ✅ zrobione |
 | 4 | Budżet, sklepy, ceny, promocje | ✅ zrobione |
 | 5 | Generator jadłospisu | ✅ zrobione |
-| 6 | Lista zakupów | ⏳ |
+| 6 | Lista zakupów | ✅ zrobione |
 | 7 | Konta i trwałość (Supabase) | ⏳ |
 | 8 | Weryfikacja końcowa | ⏳ |
 
@@ -87,10 +87,21 @@ z importu w bazie (osobna tabela z `user_id`) → etap 7. Żadnego scrapingu bez
 Przeniesione: zapis planów i zapasów w bazie → etap 7 (z kontami i RLS właściciela); ręczna
 zamiana posiłku w planie → etap 6.
 
-## 6. Lista zakupów
+## 6. Lista zakupów — zrobione
 
-Sumowanie, opakowania, grupowanie wg sklepu/kategorii, odhaczanie, posiadane, brakujące ceny,
-aktualizacja po zmianie planu; widok mobilny.
+- `/zakupy` liczona z planu tygodnia (`features/shopping/list.ts`): jedna pozycja na produkt
+  (suma z posiłków, lista przepisów), całe opakowania z wybranego sklepu, sztuki, resztki.
+- Zapasy: pozycje w pełni pokryte → „Masz w domu”, częściowo → odliczona ilość.
+- Grupowanie wg kategorii i wg sklepu (grupa „Bez ceny”), koszt każdej grupy.
+- Odhaczanie z paskiem postępu, kwotami „kupione” / „do kupienia”, „Ukryj kupione”,
+  „Wyczyść odhaczenia”; odhaczenia w karcie z podpisem pozycji — po zmianie planu zmieniona
+  pozycja wraca na listę z oznaczeniem.
+- Koszt z podziałem na statusy cen, brakujące ceny z przyczyną (nigdy 0 zł).
+- Układ mobilny (bez poziomego przewijania, duże pola wyboru); linki z generatora i widoku tygodnia.
+- Testy: jednostkowe (`list.test.ts`) i E2E (`e2e/shopping.spec.ts`, desktop + telefon).
+
+Przeniesione: ręczna zamiana posiłku w planie → etap 7 (wymaga zapisu planu — dziś plan jest
+odtwarzany deterministycznie z ustawień, D35); ręczne pozycje listy i współdzielenie → etap 7.
 
 ## 7. Konta i trwałość
 

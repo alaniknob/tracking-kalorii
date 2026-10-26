@@ -12,6 +12,8 @@ export const DRAFT_KEYS = {
   profile: "tk:draft:profile",
   pantry: "tk:draft:pantry",
   plan: "tk:draft:plan",
+  /** Odhaczone pozycje listy zakupów (id produktu → podpis pozycji). */
+  shoppingChecked: "tk:draft:shopping-checked",
 } as const;
 
 /**

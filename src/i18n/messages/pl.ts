@@ -28,7 +28,7 @@ export const pl = {
     name: "Tracking Kalorii",
     tagline: "Plan żywienia, kalorie i koszt zakupów — w jednym miejscu.",
     description:
-      "Aplikacja szacuje zapotrzebowanie energetyczne i układa 7-dniowy jadłospis dopasowany do alergii, diety, budżetu i wybranych sklepów. Listę zakupów z odhaczaniem dodamy w kolejnym etapie.",
+      "Aplikacja szacuje zapotrzebowanie energetyczne i układa 7-dniowy jadłospis dopasowany do alergii, diety, budżetu i wybranych sklepów. Lista zakupów sumuje składniki tygodnia w całych opakowaniach i pozwala odhaczać kupione.",
   },
   common: {
     unavailable: "Niedostępne",
@@ -74,6 +74,10 @@ export const pl = {
       {
         title: "Generator jadłospisu na 7 dni",
         body: "Deterministyczny plan: najpierw alergie i dieta, potem kalorie, makro i budżet w całych opakowaniach, zapasy z domu, resztki i diagnoza, gdy planu nie da się ułożyć.",
+      },
+      {
+        title: "Lista zakupów",
+        body: "Składniki z całego tygodnia zsumowane w całe opakowania, według kategorii lub sklepu, z zapasami z domu, odhaczaniem kupionych i brakującymi cenami.",
       },
     ],
     screensTitle: "Ekrany aplikacji",
@@ -747,6 +751,7 @@ export const pl = {
       deterministic: "Te same ustawienia dają zawsze ten sam plan.",
       resultTitle: "Plan jest gotowy",
       openWeek: "Zobacz jadłospis na 7 dni",
+      openShopping: "Lista zakupów",
     },
     pantry: {
       title: "Zapasy w domu (opcjonalnie)",
@@ -865,6 +870,7 @@ export const pl = {
       dayNumber: (n: number) => `Dzień ${n}`,
       macrosShort: (p: string, f: string, c: string) => `B ${p} g · T ${f} g · W ${c} g`,
       basketTitle: "Do kupienia",
+      openShopping: "Otwórz listę zakupów",
       basketLead: "Suma składników z całego tygodnia minus zapasy, w całych opakowaniach z wybranych sklepów.",
       pantryTitle: "Wykorzystane zapasy",
       pantryNone: "Plan nie korzysta z zapasów (nie podano ich lub nie są potrzebne).",
@@ -894,6 +900,41 @@ export const pl = {
       notFoundTitle: "Nie ma takiego posiłku w planie",
       notFound: "Plan mógł zostać wygenerowany ponownie. Wybierz posiłek z widoku tygodnia.",
     },
+  },
+  shopping: {
+    demoNotice:
+      "Lista powstaje z planu opartego na PRZYKŁADOWYCH przepisach i cenach (demo) — ceny nie są aktualnymi cenami sklepów. Odhaczenia zapisujemy tylko w tej karcie przeglądarki.",
+    progress: (bought: number, total: number) => `Kupione ${bought} z ${total}`,
+    progressLabel: "Postęp zakupów",
+    weekOf: (date: string) => `plan od ${date}`,
+    remaining: "Zostało do kupienia",
+    bought: "Kupione",
+    missing: (n: number) =>
+      `${n} ${n === 1 ? "produkt nie ma" : n < 5 ? "produkty nie mają" : "produktów nie ma"} ceny w wybranych sklepach — kwoty nie obejmują ${n === 1 ? "go" : "ich"}.`,
+    groupBy: "Grupowanie listy",
+    byCategory: "Według kategorii",
+    byStore: "Według sklepu",
+    hideBought: "Ukryj kupione",
+    noPriceGroup: "Bez ceny — sklep do ustalenia",
+    buy: (packages: number, size: string, store: string) => `Kup ${packages} × ${size} · ${store}`,
+    needOnly: (amount: string) => `Potrzeba ${amount}`,
+    pieces: (n: number) => `ok. ${n} szt.`,
+    need: (amount: string) => `W planie: ${amount}`,
+    fromPantry: (amount: string) => `z zapasów: ${amount}`,
+    leftover: (amount: string) => `zostanie ok. ${amount}`,
+    usedIn: (meals: number, recipes: string) =>
+      `${meals} ${meals === 1 ? "posiłek" : meals < 5 ? "posiłki" : "posiłków"}: ${recipes}`,
+    changed: "Zmienione po aktualizacji planu — sprawdź ponownie",
+    changedNotice: (n: number) =>
+      `Plan się zmienił: ${n} ${n === 1 ? "odhaczona pozycja ma" : "odhaczone pozycje mają"} teraz inną ilość lub sklep i ${n === 1 ? "wróciła" : "wróciły"} na listę.`,
+    allBought: "Wszystko kupione.",
+    pantryTitle: "Masz w domu",
+    pantryLead: "Zapasy pokrywają całą potrzebę planu — nie trzeba kupować.",
+    pantryUses: (amount: string) => `plan zużyje ${amount}`,
+    totalTitle: "Koszt zakupów (całe opakowania)",
+    staleIncluded: (amount: string) => `W tym ${amount} według cen nieaktualnych.`,
+    clearChecked: "Wyczyść odhaczenia",
+    backToPlan: "Wróć do planu",
   },
   errors: {
     notFoundTitle: "Nie znaleziono strony",

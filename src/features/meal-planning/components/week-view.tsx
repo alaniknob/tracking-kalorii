@@ -104,9 +104,14 @@ export function WeekView() {
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card className="min-w-0 space-y-4" data-testid="plan-basket">
-          <div>
-            <CardTitle>{m.basketTitle}</CardTitle>
-            <CardDescription>{m.basketLead}</CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle>{m.basketTitle}</CardTitle>
+              <CardDescription>{m.basketLead}</CardDescription>
+            </div>
+            <ButtonLink href="/zakupy" data-testid="open-shopping">
+              {m.openShopping}
+            </ButtonLink>
           </div>
           <CostBreakdown cost={view.basket} names={view.names} />
         </Card>

@@ -8,6 +8,7 @@ import type { Difficulty, KitchenEquipment } from "@/features/preferences/diet-s
 import { toGrams } from "@/features/products/quantity";
 import type { QuantityUnit } from "@/features/products/types";
 import type { RecipeReliability } from "@/features/recipes/types";
+import { buildShoppingList, type ShoppingList } from "@/features/shopping/list";
 import type { RejectedRecipe } from "./candidates";
 import type { MealSlot } from "./constants";
 import type { GeneratedPlan, PlanTargets, PlanWarning } from "./generate";
@@ -84,6 +85,8 @@ export interface PlanView {
   /** Do kupienia: potrzeby minus zapasy, w całych opakowaniach. */
   basket: BasketCost;
   pantryUsed: GeneratedPlan["pantryUsed"];
+  /** Lista zakupów liczona z tego planu (każda zmiana planu = nowa lista). */
+  shopping: ShoppingList;
   names: NameMaps;
   recipeNames: Record<string, string>;
   /** Puste = nie wybrano sklepów (wycena ze wszystkich sieci z listy). */
@@ -180,6 +183,7 @@ export function buildPlanView(
     mealIds: ids.slice(index * perDay, (index + 1) * perDay),
   }));
 
+  const names = namesFor(pricing);
   return {
     startDate,
     pricedOn: pricing.today,
@@ -192,7 +196,15 @@ export function buildPlanView(
     full: { used: plan.full.used, packages: plan.full.packages, missingCount: plan.full.missingCount },
     basket: plan.basket,
     pantryUsed: plan.pantryUsed,
-    names: namesFor(pricing),
+    shopping: buildShoppingList({
+      full: plan.full,
+      basket: plan.basket,
+      pantryUsed: plan.pantryUsed,
+      meals: plan.meals.map((m) => ({ recipeName: m.recipe.name, needs: m.needs })),
+      products,
+      storeNames: names.stores,
+    }),
+    names,
     recipeNames: Object.fromEntries(plan.meals.map((m) => [m.recipe.id, m.recipe.name])),
     selectedStores: pricing.stores ? pricing.selectedStores.map((s) => s.name) : [],
     importFile: pricing.importInfo?.fileName ?? null,

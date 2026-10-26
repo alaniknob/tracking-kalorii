@@ -51,7 +51,9 @@ src/
     meal-planning/        # generator 7 dni: constants.ts (wszystkie współczynniki), candidates.ts
                           # (filtr twardy), generate.ts (CZYSTA funkcja), pantry.ts, environment.ts
                           # (wersje robocze → PlannerInput), view.ts, akcje, ekrany generatora/tygodnia
-    shopping/ auth/       # planowane moduły (README z zakresem)
+    shopping/             # CZYSTA logika listy zakupów (list.ts: buildShoppingList, grupy,
+                          # podpisy odhaczeń, postęp) + ekran listy (components/)
+    auth/                 # planowany moduł (README z zakresem)
   i18n/
     config.ts             # obsługiwane locale (pl-PL)
     messages/pl.ts        # wszystkie teksty UI i komunikaty walidacji
@@ -183,6 +185,25 @@ roboczych i tej samej daty wyceny (`generatedOn`) powstaje identyczny plan. Odci
 wersji roboczych) wykrywa zmianę ustawień — wtedy stary plan nie jest pokazywany. Wszystkie
 współczynniki generatora są w `features/meal-planning/constants.ts` (testy: `planner.test.ts`,
 `environment.test.ts`).
+
+## Przepływ: lista zakupów
+
+```
+/zakupy (client) → usePlan() → loadPlanAction (jak /plan)
+   └─ buildPlanView → buildShoppingList({ full, basket, pantryUsed, meals, products, storeNames })
+        ├─ pozycja na produkt: potrzeba (suma z posiłków) − zapasy = do kupienia
+        ├─ zakup z koszyka: sklep, opakowania × wielkość, cena, status, resztka | missingReason
+        ├─ toBuy / covered („Masz w domu”), byCategory, byStore (null = bez ceny), totals
+        └─ signature = sklep|opakowania|ilość do kupienia
+<ShoppingList> — tk:draft:shopping-checked {productId: signature}
+   ├─ pruneChecked (usuwa produkty spoza planu) → zapis
+   ├─ checkStateOf: unchecked | checked | changed (podpis różny → wraca na listę)
+   └─ progressOf → kupione / do kupienia (StatusTotals, bez mieszania statusów)
+```
+
+Lista nie ma własnego stanu poza odhaczeniami — jest funkcją planu, więc nowy plan (inne zapasy,
+data, ustawienia) automatycznie daje nową listę. Testy: `shopping/list.test.ts`,
+`e2e/shopping.spec.ts`.
 
 ## Ekrany i nawigacja
 

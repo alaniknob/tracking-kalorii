@@ -1,11 +1,11 @@
 # Model danych
 
-> **Stan obecny (koniec etapu 5):** istnieją migracje katalogu publicznego
+> **Stan obecny (koniec etapu 6):** istnieją migracje katalogu publicznego
 > (`20261026140000_catalog.sql`) i cen (`20261026150000_pricing.sql`). Aplikacja jeszcze **nie
 > łączy się** z bazą: katalog i ceny demo czyta z kodu przez interfejsy dostawców, a
 > `supabase/seed.sql` jest generowany z tych samych danych. Plany i zapasy (etap 5) istnieją
-> tylko w karcie przeglądarki — tabele planów powstaną razem z kontami (etap 7). Pozostałe
-> tabele to schemat docelowy (etapy 6–7). Typy domenowe w kodzie
+> tylko w karcie przeglądarki, podobnie odhaczenia listy zakupów (etap 6) — tabele planów i list
+> powstaną razem z kontami (etap 7). Pozostałe tabele to schemat docelowy (etap 7). Typy domenowe w kodzie
 > (`src/features/*/types.ts`) są zgodne z nazwami kolumn (camelCase ↔ snake_case).
 
 ## Typy domenowe już zdefiniowane w kodzie
@@ -184,11 +184,17 @@ wyliczone `kcal`, `protein_g`, `fat_g`, `carbohydrates_g`, `ingredients_cost_pln
 **`pantry_items`** — `id`, `user_id`, `product_id`, `amount numeric > 0`, `unit text`,
 `updated_at`; unikalne (`user_id`, `product_id`).
 
+W etapie 6 lista zakupów jest **wyliczana z planu** przy każdym odczycie (`ShoppingList` w
+`features/shopping/list.ts`), a w karcie jest tylko `tk:draft:shopping-checked` =
+`{ [productId]: signature }`, gdzie `signature = "<storeId>|<packages>|<ilość do kupienia>"`.
+Inny podpis po zmianie planu = pozycja nieodhaczona („zmieniono”). W etapie 7 tabele poniżej
+zapiszą migawkę listy dla konta:
+
 **`shopping_lists`** — `id`, `user_id`, `meal_plan_id null`, `created_at`.
 
 **`shopping_list_items`** — `id`, `shopping_list_id` FK cascade, `product_id`, `store_id null`,
 `quantity_g`, `packages smallint`, `package_price_pln null`, `price_status text`, `in_pantry boolean`,
-`checked boolean`.
+`checked boolean`, `checked_signature text null` (ta sama semantyka podpisu co w karcie).
 
 ## Polityki RLS
 

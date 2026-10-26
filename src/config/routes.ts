@@ -56,7 +56,7 @@ export const SCREENS: Record<ScreenId, ScreenDefinition> = {
   generator: { id: "generator", path: "/generator", stage: 5, available: true, group: "planning", listed: true },
   week: { id: "week", path: "/plan", stage: 5, available: true, group: "planning", listed: true },
   meal: { id: "meal", path: "/plan/posilki", stage: 5, available: true, group: "planning", listed: false },
-  shopping: { id: "shopping", path: "/zakupy", stage: 6, available: false, group: "planning", listed: true },
+  shopping: { id: "shopping", path: "/zakupy", stage: 6, available: true, group: "planning", listed: true },
   recipes: { id: "recipes", path: "/przepisy", stage: 3, available: true, group: "catalog", listed: true },
   products: { id: "products", path: "/produkty", stage: 3, available: true, group: "catalog", listed: true },
   prices: { id: "prices", path: "/ceny", stage: 4, available: true, group: "catalog", listed: true },

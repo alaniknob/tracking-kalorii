@@ -279,3 +279,27 @@ Przy ciasnym budżecie generator może powtarzać tani przepis częściej niż l
 (wolny tekst) jest dopasowywany do nazw z katalogu; jeśli wszystkie dopasowania są wykluczone
 przez dietę lub alergie, preferencja jest usuwana z konfliktem „rozstrzygniętym” (np. „jogurt”
 przy diecie wegańskiej). Etykieta bez dopasowania nie jest konfliktem.
+
+## D38. Lista zakupów jest funkcją planu
+
+Lista nie ma własnej kopii danych: `buildShoppingList` działa w `buildPlanView` na koszyku
+wyliczonym przez generator (te same oferty, opakowania i zapasy). Dzięki temu suma listy jest
+zawsze równa kosztowi „do kupienia” w widoku tygodnia, a każda zmiana planu (zapasy, data,
+ustawienia) daje nową listę bez synchronizacji. Alternatywa — zapisana migawka listy — wymaga
+trwałego zapisu (etap 7) i wprowadzałaby ryzyko rozjazdu z planem.
+
+## D39. Odhaczenia z podpisem pozycji
+
+Odhaczenie to `{ productId: "<sklep>|<opakowania>|<ilość do kupienia>" }` w `sessionStorage`.
+Jeśli po zmianie planu podpis się różni (inny sklep, więcej opakowań, inna ilość), pozycja
+**nie jest** uznawana za kupioną — wraca na listę z plakietką „Zmieniono po aktualizacji planu”.
+Lepiej poprosić o ponowne sprawdzenie niż przemilczeć brakujące opakowanie. Produkty usunięte
+z planu są usuwane z odhaczeń przy odczycie. Odhaczenia, jak plan, są tylko w karcie (do etapu 7).
+
+## D40. Jeden sklep i jeden rozmiar opakowania na produkt
+
+Lista pokazuje zakup dokładnie taki, jaki wycenił koszyk: jedna oferta na produkt (wybór wg
+reguł z etapu 4: status ceny → koszt opakowań → resztki). Nie łączymy rozmiarów (np. 1 kg +
+500 g) ani nie minimalizujemy liczby odwiedzanych sklepów — oba wymagałyby zmian w wycenie
+koszyka i w generatorze, żeby budżet i lista dalej się zgadzały. Produkty bez ceny trafiają do
+grupy „Bez ceny” i nie są wliczane do sumy (liczba braków jest pokazywana osobno).
