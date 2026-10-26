@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/*
+ * Centralne tokeny projektu (kolory, promienie, cienie, typografia).
+ * Komponenty korzystają wyłącznie z tych tokenów — nie z surowych wartości.
+ * Główny kolor marki: ciemny granat (primary).
+ */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  --color-background: #f5f5f7;
+  --color-surface: #ffffff;
+  --color-surface-muted: #fafafc;
+  --color-foreground: #1d1d1f;
+  --color-muted: #6e6e73;
+  --color-subtle: #86868b;
+  --color-border: #e3e3e8;
+  --color-border-strong: #c7c7cc;
+
+  --color-primary: #0f2a4f;
+  --color-primary-hover: #0a1f3c;
+  --color-primary-soft: #e8eef7;
+  --color-primary-foreground: #ffffff;
+  --color-ring: #3a6db5;
+
+  --color-success: #1f7a4d;
+  --color-success-soft: #e7f5ee;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fdf4e3;
+  --color-danger: #b42318;
+  --color-danger-soft: #fdecea;
+  --color-info: #1d4f91;
+  --color-info-soft: #eaf1fb;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-raised: 0 4px 16px rgb(16 24 40 / 0.08);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
